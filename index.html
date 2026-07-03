@@ -19,10 +19,18 @@
             padding: 20px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
         }
         h1, h2 {
             text-align: center;
             color: #333;
+            margin-top: 0;
+        }
+        .seccion-bloque {
+            border-top: 2px solid #e9ecef;
+            padding-top: 20px;
         }
         .form-group {
             display: flex;
@@ -65,7 +73,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 15px;
         }
         th, td {
             padding: 12px;
@@ -79,7 +87,7 @@
             background-color: #f1f1f1;
         }
         .totals {
-            margin-top: 20px;
+            margin-top: 15px;
             font-size: 18px;
             font-weight: bold;
             display: flex;
@@ -103,59 +111,116 @@
         .hidden {
             display: none;
         }
+        .zona-ia {
+            background-color: #f0f7ff;
+            border: 2px dashed #007bff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Control de Caja Diaria</h1>
     
-    <div class="form-group">
-        <input type="text" id="fecha" readonly style="background-color: #e9ecef; max-width: 150px;" title="Fecha automática de trabajo">
-        <input type="text" id="detalle" placeholder="Concepto / Detalle" required autocomplete="off">
-        <input type="number" id="monto" placeholder="Monto ($)" required min="0" step="any">
-        <select id="condicion" onchange="toggleDeudorField()">
-            <option value="Efectivo">Efectivo</option>
-            <option value="Mercado Pago">Mercado Pago</option>
-            <option value="Tarjeta">Tarjeta</option>
-            <option value="DEBE">DEBE (Fiado)</option>
-        </select>
-        <input type="text" id="deudor" placeholder="Nombre del Deudor" class="hidden" style="text-transform: uppercase;">
-        <button onclick="agregarItem()">Agregar</button>
+    <div>
+        <h1>Control de Caja Diaria</h1>
+        
+        <div class="zona-ia">
+            <strong style="color: #0056b3;">🤖 Asistente de Auditoría IA (Tolerancia 0)</strong>
+            <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                <input type="password" id="apiKey" placeholder="Pegá tu API Key de Gemini aquí" style="padding: 6px; font-size: 13px; width: 250px;">
+                <input type="file" id="fileAI" accept="image/*" multiple style="font-size: 13px;">
+                <button onclick="procesarConIA()" style="background-color: #007bff; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">⚡ Escanear Comprobantes</button>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <input type="text" id="fecha" readonly style="background-color: #e9ecef; max-width: 150px;" title="Fecha automática de trabajo">
+            <input type="text" id="detalle" placeholder="Concepto / Detalle" required autocomplete="off">
+            <input type="number" id="monto" placeholder="Monto ($)" required min="0" step="any">
+            <select id="condicion" onchange="toggleDeudorField()">
+                <option value="Efectivo">Efectivo</option>
+                <option value="Mercado Pago">Mercado Pago</option>
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="DEBE">DEBE (Fiado)</option>
+            </select>
+            <input type="text" id="deudor" placeholder="Nombre del Deudor" class="hidden" style="text-transform: uppercase;">
+            <button onclick="agregarItem()">Agregar Venta</button>
+        </div>
+
+        <div class="form-group" style="justify-content: flex-end;">
+            <input type="file" id="importExcel" accept=".xlsx, .xls" style="display: none;" onchange="importarExcel(this)">
+            <button onclick="document.getElementById('importExcel').click()" class="btn-export" style="background-color: #6c757d;">Cargar Excel Ventas</button>
+            <button onclick="exportarExcel()" class="btn-export">Exportar Cierre (.xls)</button>
+            <button onclick="limpiarCaja()" class="btn-clear">Limpiar Caja</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Concepto / Detalle</th>
+                    <th>Monto</th>
+                    <th>Medio de Pago</th>
+                    <th>Deudor</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaCuerpo"></tbody>
+        </table>
+
+        <div class="totals">
+            <div class="total-item" style="color: #218838;">Efectivo: $<span id="totalEfectivo">0.00</span></div>
+            <div class="total-item" style="color: #0069d9;">Mercado Pago: $<span id="totalMP">0.00</span></div>
+            <div class="total-item" style="color: #6f42c1;">Tarjeta: $<span id="totalTarjeta">0.00</span></div>
+            <div class="total-item" style="color: #dc3545;">Debe: $<span id="totalDebe">0.00</span></div>
+        </div>
     </div>
 
-    <div class="form-group" style="justify-content: flex-end;">
-        <input type="file" id="importExcel" accept=".xlsx, .xls" style="display: none;" onchange="importarExcel(this)">
-        <button onclick="document.getElementById('importExcel').click()" class="btn-export" style="background-color: #6c757d;">Cargar Excel</button>
-        <button onclick="exportarExcel()" class="btn-export">Exportar Excel</button>
-        <button onclick="limpiarCaja()" class="btn-clear">Limpiar Caja</button>
+    <div class="seccion-bloque">
+        <h2>📦 Registro de Egresos, Facturas y Remitos</h2>
+        
+        <div class="form-group">
+            <select id="provTipo" onchange="adaptarFormularioProveedor()">
+                <option value="Factura">Factura (A, B o C)</option>
+                <option value="Remito">Remito Comercial</option>
+            </select>
+            <input type="text" id="provNombre" placeholder="Proveedor / Distribuidor" style="text-transform: uppercase;">
+            <input type="text" id="provNro" placeholder="Nro de Factura (Ej: 0001-00023412)">
+            <input type="text" id="provDetalle" placeholder="Detalle de la compra">
+            <input type="number" id="provMonto" placeholder="Total ($)" min="0" step="any">
+            <button onclick="agregarEgreso()" style="background-color: #e65100;">Guardar Egreso</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr style="background-color: #fff3e0;">
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Proveedor</th>
+                    <th>Nro Comprobante</th>
+                    <th>Detalle / Concepto</th>
+                    <th>Monto Total</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaProveedoresCuerpo"></tbody>
+        </table>
+        
+        <div class="totals" style="background-color: #ffe0b2;">
+            <div class="total-item" style="color: #e65100;">Total Invertido en el Mes: $<span id="totalEgresos">0.00</span></div>
+        </div>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Concepto / Detalle</th>
-                <th>Monto</th>
-                <th>Medio de Pago</th>
-                <th>Deudor</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody id="tablaCuerpo"></tbody>
-    </table>
-
-    <div class="totals">
-        <div class="total-item" style="color: #218838;">Efectivo: $<span id="totalEfectivo">0.00</span></div>
-        <div class="total-item" style="color: #0069d9;">Mercado Pago: $<span id="totalMP">0.00</span></div>
-        <div class="total-item" style="color: #6f42c1;">Tarjeta: $<span id="totalTarjeta">0.00</span></div>
-        <div class="total-item" style="color: #dc3545;">Debe: $<span id="totalDebe">0.00</span></div>
-    </div>
 </div>
 
 <script>
     let items = JSON.parse(localStorage.getItem('cajaItems')) || [];
+    let egresos = JSON.parse(localStorage.getItem('egresosItems')) || [];
 
+    // Lógica Automática de Fechas del Negocio
     function establecerFechaAutomatica() {
         let hoy = new Date();
         let diaSemana = hoy.getDay(); 
@@ -178,7 +243,9 @@
             fechaObjetivo.setDate(hoy.getDate() - 1);
         }
 
-        document.getElementById('fecha').value = fechaObjetivo.toLocaleDateString('es-AR').replace(/\//g, '-');
+        const formatoFecha = fechaObjetivo.toLocaleDateString('es-AR').replace(/\//g, '-');
+        document.getElementById('fecha').value = formatoFecha;
+        return formatoFecha;
     }
 
     function toggleDeudorField() {
@@ -191,6 +258,25 @@
             deudorField.classList.add('hidden');
             deudorField.required = false;
             deudorField.value = '';
+        }
+    }
+
+    // Adaptación estricta del formulario de proveedores según tu regla
+    function adaptarFormularioProveedor() {
+        const tipo = document.getElementById('provTipo').value;
+        const nroField = document.getElementById('provNro');
+        const detalleField = document.getElementById('provDetalle');
+
+        if (tipo === 'Remito') {
+            nroField.style.display = 'none';
+            detalleField.style.display = 'none';
+            nroField.value = '-';
+            detalleField.value = 'REMITO GENERAL DE MERCADERÍA';
+        } else {
+            nroField.style.display = 'inline-block';
+            detalleField.style.display = 'inline-block';
+            nroField.value = '';
+            detalleField.value = '';
         }
     }
 
@@ -210,17 +296,8 @@
             return;
         }
 
-        const item = {
-            id: Date.now(),
-            fecha,
-            detalle,
-            monto,
-            condicion,
-            deudor: condicion === 'DEBE' ? deudor : ''
-        };
-
-        items.push(item);
-        guardarYRenderizar();
+        items.push({ id: Date.now(), fecha, detalle, monto, condicion, deudor: condicion === 'DEBE' ? deudor : '' });
+        guardarYRenderizarAll();
 
         document.getElementById('detalle').value = '';
         document.getElementById('monto').value = '';
@@ -229,184 +306,10 @@
         establecerFechaAutomatica();
     }
 
-    function eliminarItem(id) {
-        items = items.filter(item => item.id !== id);
-        guardarYRenderizar();
-        establecerFechaAutomatica();
-    }
-
-    function guardarYRenderizar() {
-        localStorage.setItem('cajaItems', JSON.stringify(items));
-        renderizarTabla();
-    }
-
-    function renderizarTabla() {
-        const tbody = document.getElementById('tablaCuerpo');
-        tbody.innerHTML = '';
-
-        let ef = 0, mp = 0, tj = 0, db = 0;
-
-        items.forEach(item => {
-            let condVisual = item.condicion;
-            if(condVisual === 'P') condVisual = 'Efectivo';
-            if(condVisual === 'MP') condVisual = 'Mercado Pago';
-            if(condVisual === 'T') condVisual = 'Tarjeta';
-
-            if (condVisual === 'Efectivo') ef += item.monto;
-            if (condVisual === 'Mercado Pago') mp += item.monto;
-            if (condVisual === 'Tarjeta') tj += item.monto;
-            if (condVisual === 'DEBE') db += item.monto;
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${item.fecha}</td>
-                <td>${item.detalle}</td>
-                <td>$${item.monto.toFixed(2)}</td>
-                <td>${condVisual}</td>
-                <td>${item.deudor || '-'}</td>
-                <td><button class="delete-btn" onclick="eliminarItem(${item.id})">🗑️</button></td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        document.getElementById('totalEfectivo').textContent = ef.toFixed(2);
-        document.getElementById('totalMP').textContent = mp.toFixed(2);
-        document.getElementById('totalTarjeta').textContent = tj.toFixed(2);
-        document.getElementById('totalDebe').textContent = db.toFixed(2);
-    }
-
-    function limpiarCaja() {
-        if (confirm('¿Seguro que querés vaciar la caja actual?')) {
-            items = [];
-            guardarYRenderizar();
-            establecerFechaAutomatica();
-        }
-    }
-
-    function exportarExcel() {
-        if (items.length === 0) {
-            alert('No hay datos para exportar.');
-            return;
-        }
-
-        let totEf = 0, totMP = 0, totT = 0, totDebe = 0;
-        
-        let excelHtml = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head><meta charset="utf-8"></head>
-        <body>
-        <table border="1">
-            <tr style="background-color: #f2f2f2; font-weight: bold;">
-                <th>Fecha</th>
-                <th>Concepto / Detalle</th>
-                <th>Monto ($)</th>
-                <th>Medio de Pago</th>
-                <th>Deudor</th>
-            </tr>`;
-
-        items.forEach(i => {
-            let condCompleta = i.condicion;
-            if (condCompleta === 'P' || condCompleta === 'Efectivo') { condCompleta = 'Efectivo'; totEf += i.monto; }
-            else if (condCompleta === 'MP' || condCompleta === 'Mercado Pago') { condCompleta = 'Mercado Pago'; totMP += i.monto; }
-            else if (condCompleta === 'T' || condCompleta === 'Tarjeta') { condCompleta = 'Tarjeta'; totT += i.monto; }
-            else if (condCompleta === 'DEBE') { totDebe += i.monto; }
-
-            excelHtml += `
-            <tr>
-                <td>${i.fecha}</td>
-                <td>${i.detalle}</td>
-                <td>${i.monto}</td>
-                <td>${condCompleta}</td>
-                <td>${i.deudor || ''}</td>
-            </tr>`;
-        });
-
-        excelHtml += `<tr><td colspan="5"></td></tr>`;
-        excelHtml += `<tr style="font-weight: bold;"><td colspan="2">TOTAL EFECTIVO:</td><td>${totEf}</td><td>Efectivo</td><td></td></tr>`;
-        excelHtml += `<tr style="font-weight: bold;"><td colspan="2">TOTAL MERCADO PAGO:</td><td>${totMP}</td><td>Mercado Pago</td><td></td></tr>`;
-        excelHtml += `<tr style="font-weight: bold;"><td colspan="2">TOTAL TARJETA:</td><td>${totT}</td><td>Tarjeta</td><td></td></tr>`;
-        excelHtml += `<tr style="font-weight: bold; color: #dc3545;"><td colspan="2">TOTAL FIADOS (DEBE):</td><td>${totDebe}</td><td>DEBE</td><td></td></tr>`;
-
-        excelHtml += `</table></body></html>`;
-
-        const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `Cierre_Caja_${document.getElementById('fecha').value}.xls`;
-        link.click();
-    }
-
-    function importarExcel(input) {
-        const archivo = input.files[0];
-        if (!archivo) return;
-        
-        const lector = new FileReader();
-        lector.onload = function(e) {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const libro = XLSX.read(data, { type: 'array' });
-                const primeraHoja = libro.Sheets[libro.SheetNames[0]];
-                const filas = XLSX.utils.sheet_to_json(primeraHoja, { header: 1 });
-                
-                if(filas.length <= 1) return alert("El archivo no tiene registros.");
-
-                let headers = filas[0].map(h => String(h).trim().toUpperCase());
-                let idxFecha = headers.findIndex(h => h.includes("FECHA"));
-                let idxDetalle = headers.findIndex(h => h.includes("CONCEPTO") || h.includes("DETALLE") || h.includes("ARTICULO"));
-                let idxMonto = headers.findIndex(h => h.includes("MONTO") || h.includes("IMPORTE"));
-                let idxCondicion = headers.findIndex(h => h.includes("PAGO") || h.includes("MEDIO"));
-                let idxDeudor = headers.findIndex(h => h.includes("DEUDOR"));
-
-                if(idxFecha === -1 || idxDetalle === -1 || idxMonto === -1) {
-                    return alert("No se pudo leer la cabecera del Excel automáticamente. Revisá los nombres de las columnas.");
-                }
-
-                let nuevosItems = [];
-
-                for(let k = 1; k < filas.length; k++) {
-                    let fila = filas[k];
-                    if(!fila || fila.length === 0 || !fila[idxFecha] || String(fila[idxDetalle]).startsWith("TOTAL")) continue;
-
-                    let rawCond = String(fila[idxCondicion] || '').trim();
-                    let condicionNormalizada = "Efectivo";
-                    if(rawCond === 'P' || rawCond.toUpperCase() === 'EFECTIVO') condicionNormalizada = 'Efectivo';
-                    else if(rawCond === 'MP' || rawCond.toUpperCase().includes('MERCADO')) condicionNormalizada = 'Mercado Pago';
-                    else if(rawCond === 'T' || rawCond.toUpperCase().includes('TARJETA')) condicionNormalizada = 'Tarjeta';
-                    else if(rawCond.toUpperCase() === 'DEBE') condicionNormalizada = 'DEBE';
-
-                    let montoNumerico = parseFloat(String(fila[idxMonto]).replace(/[^0-9.-]/g, ''));
-                    if(isNaN(montoNumerico)) continue;
-
-                    nuevosItems.push({
-                        id: Date.now() + k,
-                        fecha: String(fila[idxFecha]).trim().replace(/\//g, '-'),
-                        detalle: String(fila[idxDetalle]).trim(),
-                        monto: montoNumerico,
-                        condicion: condicionNormalizada,
-                        deudor: condicionNormalizada === 'DEBE' ? String(fila[idxDeudor] || '').trim().toUpperCase() : ''
-                    });
-                }
-
-                if(nuevosItems.length > 0) {
-                    items = items.concat(nuevosItems);
-                    guardarYRenderizar();
-                    establecerFechaAutomatica();
-                    alert(`¡Éxito! Se acoplaron ${nuevosItems.length} registros del Excel.`);
-                } else {
-                    alert("No se encontraron filas válidas.");
-                }
-            } catch (error) {
-                alert("Error interpretando el Excel.");
-            }
-        };
-        lector.readAsArrayBuffer(archivo);
-        input.value = "";
-    }
-
-    window.onload = () => {
-        renderizarTabla();
-        establecerFechaAutomatica();
-    };
-</script>
-</body>
-</html>
+    function agregarEgreso() {
+        const tipo = document.getElementById('provTipo').value;
+        const proveedor = document.getElementById('provNombre').value.trim().toUpperCase();
+        const nro = document.getElementById('provNro').value.trim();
+        const detalle = document.getElementById('provDetalle').value.trim();
+        const monto = parseFloat(document.getElementById('provMonto').value);
+        const fecha = document
