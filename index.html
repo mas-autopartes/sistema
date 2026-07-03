@@ -3,1202 +3,410 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Integrado de Control Comercial - Cierre de Caja & Profit</title>
+    <title>Sistema Control Comercial</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        :root {
-            --bg-principal: #f8fafc;
-            --azul-premium: #1e40af;
-            --azul-glow: #3b82f6;
-            --verde-exito: #15803d;
-            --verde-light: #f0fdf4;
-            --rojo-alerta: #b91c1c;
-            --rojo-critico: #dc2626;
-            --bg-critico: #fef2f2;
-            --amarillo-deuda: #fef08a;
-            --naranja-proveedor: #ea580c;
-            --texto-oscuro: #0f172a;
-        }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-principal);
-            color: var(--texto-oscuro);
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
             margin: 0;
             padding: 20px;
         }
-
-        .contenedor-app {
-            max-width: 1450px;
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .header-estilizado {
-            background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
-            color: white;
-            padding: 24px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.3);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .grid-paneles {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-        @media (min-width: 1024px) {
-            .grid-paneles { grid-template-columns: 1fr 2fr; }
-        }
-
-        .tarjeta-blanca {
-            background-color: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
+            background: #fff;
             padding: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-
-        .titulo-seccion {
-            font-size: 16px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-top: 0;
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #f1f5f9;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .bloque-formulario {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .table-input {
-            width: 100%;
-            border: 1px solid #cbd5e1;
-            padding: 8px 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
             border-radius: 8px;
-            font-size: 13px;
-            box-sizing: border-box;
         }
-        .table-input:focus {
-            outline: none;
-            border-color: var(--azul-glow);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-        }
-
-        .btn-accion {
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .btn-primario { background-color: var(--azul-premium); color: white; }
-        .btn-primario:hover { background-color: #1d4ed8; }
-        .btn-exito { background-color: var(--verde-exito); color: white; }
-        .btn-exito:hover { background-color: #166534; }
-        .btn-alerta { background-color: var(--naranja-proveedor); color: white; }
-        .btn-alerta:hover { background-color: #c2410c; }
-        .btn-danger { background-color: var(--rojo-critico); color: white; }
-        .btn-danger:hover { background-color: #991b1b; }
-
-        .tabla-interactiva {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            text-align: left;
-        }
-        .tabla-interactiva th {
-            background-color: #f1f5f9;
-            color: #475569;
-            font-weight: 700;
-            padding: 10px 12px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        .tabla-interactiva td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .badge-condicion {
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 10px;
-        }
-        .badge-efectivo { background-color: #dcfce7; color: #15803d; }
-        .badge-mp { background-color: #dbeafe; color: #1d4ed8; }
-        .badge-tarjeta { background-color: #f3e8ff; color: #6b21a8; }
-        .badge-debe { background-color: #fef9c3; color: #9a3412; }
-
-        .panel-metricas-rapidas {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, min-width: 180px);
-            gap: 12px;
-            margin-top: 15px;
-        }
-
-        .metrica-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 12px;
-            border-radius: 10px;
+        h1, h2 {
             text-align: center;
+            color: #333;
         }
-        .metrica-titulo { font-size: 10px; font-weight: bold; color: #64748b; uppercase tracking-wider; }
-        .metrica-valor { font-size: 15px; font-weight: 800; color: #1e293b; margin-top: 4px; }
-
-        .zona-drop {
-            border: 2px dashed #cbd5e1;
-            background-color: #f8fafc;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .zona-drop:hover {
-            border-color: var(--azul-glow);
-            background-color: #eff6ff;
-        }
-
-        .preview-imagen-contenedor {
+        .form-group {
             display: flex;
             gap: 10px;
+            margin-bottom: 15px;
             flex-wrap: wrap;
-            margin-top: 10px;
         }
-        .preview-box {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            overflow: hidden;
+        .form-group input, .form-group select, .form-group button {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
-        .preview-box img { width: 100%; height: 100%; object-fit: cover; }
-        .btn-remove-preview {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: rgba(220, 38, 38, 0.85);
+        .form-group input[type="text"], .form-group input[type="number"] {
+            flex: 1;
+            min-width: 150px;
+        }
+        .form-group button {
+            background-color: #28a745;
             color: white;
             border: none;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 10px;
             cursor: pointer;
+            font-weight: bold;
+        }
+        .form-group button:hover {
+            background-color: #218838;
+        }
+        .btn-export {
+            background-color: #007bff !important;
+        }
+        .btn-export:hover {
+            background-color: #0069d9 !important;
+        }
+        .btn-clear {
+            background-color: #dc3545 !important;
+        }
+        .btn-clear:hover {
+            background-color: #c82333 !important;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .totals {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .total-item {
+            padding: 5px 10px;
+        }
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <div class="contenedor-app">
-        
-        <div class="header-estilizado">
-            <div>
-                <h1 style="margin:0; font-size:22px; font-weight:800; letter-spacing:-0.5px;">Panel Inteligente Conectiva Mkt</h1>
-                <p style="margin:4px 0 0 0; font-size:12px; color:#93c5fd;">Auditoría comercial indexada por períodos mensuales</p>
-            </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <label style="font-size:11px; font-weight:bold; color:#93c5fd;">ÍNDICE MENSUAL DE CAJA:</label>
-                <select id="periodoCajaSelector" class="table-input" style="width:130px; font-weight:bold; background: white; color:black; height:34px;" onchange="conmutarIndiceMensualCaja()">
-                    </select>
-            </div>
-        </div>
-
-        <div style="display:flex; gap:8px; border-bottom:2px solid #e2e8f0; padding-bottom:2px;">
-            <button id="tab-caja" class="btn-accion btn-primario" onclick="activarPestaña('caja')">📊 Caja Diaria y Ventas</button>
-            <button id="tab-deudores" class="btn-accion" style="background:#e2e8f0; color:#334155;" onclick="activarPestaña('deudores')">👥 Cuentas Corrientes (Fiados)</button>
-            <button id="tab-proveedores" class="btn-accion" style="background:#e2e8f0; color:#334155;" onclick="activarPestaña('proveedores')">📦 Egresos de Mercadería / Gastos</button>
-            <button id="tab-config" class="btn-accion" style="background:#e2e8f0; color:#334155;" onclick="activarPestaña('config')">⚙️ Configuración API</button>
-        </div>
-
-        <div id="seccion-caja" class="grid-paneles">
-            
-            <div class="space-y-4" style="display:flex; flex-direction:column; gap:20px;">
-                
-                <div class="tarjeta-blanca">
-                    <h3 class="titulo-seccion">📝 Registro Manual Directo</h3>
-                    <div class="bloque-formulario">
-                        <div style="display: flex; gap: 8px;">
-                            <div style="flex: 1;">
-                                <label style="font-size: 11px; font-weight: bold; color: #475569;">FECHA CAJA</label>
-                                <input type="text" id="cajaFechaInput" class="table-input" readonly style="background:#f1f5f9; font-weight:bold;">
-                            </div>
-                            <div style="flex: 2;">
-                                <label style="font-size: 11px; font-weight: bold; color: #475569;">CONCEPTO / DETALLE</label>
-                                <input type="text" id="cajaDetalleInput" class="table-input" value="VENTA" autocomplete="off">
-                            </div>
-                        </div>
-
-                        <div style="display: flex; gap: 8px;">
-                            <div style="flex: 1;">
-                                <label style="font-size: 11px; font-weight: bold; color: #475569;">IMPORTE ($)</label>
-                                <input type="number" id="cajaMontoInput" class="table-input" placeholder="0.00">
-                            </div>
-                            <div style="flex: 1;">
-                                <label style="font-size: 11px; font-weight: bold; color: #475569;">MEDIO DE PAGO</label>
-                                <select id="cajaCondicionInput" class="table-input" onchange="alternarFilaDeudorManual()">
-                                    <option value="Efectivo">Efectivo</option>
-                                    <option value="Mercado Pago">Mercado Pago</option>
-                                    <option value="Tarjeta">Tarjeta</option>
-                                    <option value="DEBE">Fiado (Suma a Deuda)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div id="filaDeudorManual" style="display:none;">
-                            <label style="font-size: 11px; font-weight: bold; color: var(--rojo-alerta);">SELECCIONAR CLIENTE DEUDOR:</label>
-                            <input type="text" id="cajaDeudorInput" class="table-input uppercase" placeholder="NOMBRE DEL CLIENTE">
-                        </div>
-
-                        <button onclick="asentarCajaManualRapido()" class="btn-accion btn-primario" style="width: 100%; height: 38px;">
-                            ➕ Agregar Movimiento
-                        </button>
-                    </div>
-                </div>
-
-                <div class="tarjeta-blanca" style="border: 2px solid #bfdbfe;">
-                    <h3 class="titulo-seccion" style="color:var(--azul-premium);">🤖 Auditoría Asistida por IA</h3>
-                    
-                    <div class="bloque-formulario">
-                        <div class="zona-drop" onclick="document.getElementById('fileInputAI').click()">
-                            <p style="font-size:12px; font-weight:bold; color:#475569; margin:0;">📷 Subir Foto de Cierre o Capturas</p>
-                            <p style="font-size:10px; color:#94a3b8; margin:4px 0 0 0;">Procesa múltiples imágenes en lote</p>
-                            <input type="file" id="fileInputAI" multiple accept="image/*" class="hidden" onchange="procesarColaArchivos(this)">
-                        </div>
-                        
-                        <div class="preview-imagen-contenedor" id="contenedorPreviews"></div>
-
-                        <div style="border-top:1px solid #e2e8f0; padding-top:10px;">
-                            <label style="font-size: 11px; font-weight: bold; color: #475569;">🎤 Grabar Instrucción por Voz / Dictado:</label>
-                            <div style="display:flex; gap:8px; margin-top:4px;">
-                                <button id="btnGrabacion" onclick="conmutarGrabadorVoz()" class="btn-accion" style="background-color:#ef4444; color:white; flex:1;">
-                                    🎙️ Iniciar Dictado
-                                </button>
-                                <button onclick="limpiarAudioCola()" class="btn-accion" style="background-color:#e2e8f0; color:#475569;">✕</button>
-                            </div>
-                            <div id="audioStatusLabel" style="font-size:10px; color:#64748b; font-style:italic; margin-top:4px; display:none;">Grabando...</div>
-                        </div>
-
-                        <button onclick="ejecutarAuditoriaInteligenteAI()" class="btn-accion btn-exito" style="width: 100%; background: linear-gradient(to right, #2563eb, #16a34a); font-weight: bold; box-shadow: 0 4px 12px rgba(37,99,235,0.2);">
-                            ⚡ Escanear y Cargar con IA
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tarjeta-blanca" style="display:flex; flex-direction:column; gap:15px;">
-                <div style="display:flex; justify-content:between; align-items:center; flex-wrap:wrap; gap:10px;">
-                    <h3 class="titulo-seccion" style="margin:0; border:none; padding:0;">📊 Movimientos del Periodo</h3>
-                    <div style="display:flex; gap:6px;">
-                        <input type="file" id="excelCajaInput" accept=".xls,.xlsx" class="hidden" onchange="importarExcelCaja(this)">
-                        <button onclick="document.getElementById('excelCajaInput').click()" class="btn-accion" style="background-color:#f1f5f9; color:#334155; border:1px solid #cbd5e1;">📁 Cargar Excel</button>
-                        <button onclick="exportarCajaExcelConColor()" class="btn-accion btn-exito">📥 Exportar Cierre (.xls)</button>
-                        <button onclick="limpiarCajaCompleta()" class="btn-accion btn-danger">🗑️ Inicializar Caja</button>
-                    </div>
-                </div>
-
-                <div class="panel-metricas-rapidas">
-                    <div class="metrica-card" style="border-left: 4px solid #16a34a;">
-                        <div class="metrica-titulo">💵 EFECTIVO</div>
-                        <div id="mefectivo" class="metrica-valor">$0.00</div>
-                    </div>
-                    <div class="metrica-card" style="border-left: 4px solid #2563eb;">
-                        <div class="metrica-titulo">📱 MERCADO PAGO</div>
-                        <div id="mmp" class="metrica-valor">$0.00</div>
-                    </div>
-                    <div class="metrica-card" style="border-left: 4px solid #8b5cf6;">
-                        <div class="metrica-titulo">💳 TARJETA</div>
-                        <div id="mtarjeta" class="metrica-valor">$0.00</div>
-                    </div>
-                    <div class="metrica-card" style="border-left: 4px solid #ea580c;">
-                        <div class="metrica-titulo">⚠️ FIADOS (DEBE)</div>
-                        <div id="mdebe" class="metrica-valor">$0.00</div>
-                    </div>
-                </div>
-
-                <div style="overflow-x:auto; border:1px solid #e2e8f0; border-radius:10px; max-height:460px;">
-                    <table class="tabla-interactiva">
-                        <thead style="position: sticky; top:0; z-index:10;">
-                            <tr>
-                                <th style="width: 12%;">Fecha</th>
-                                <th style="width: 50%;">Concepto / Detalle</th>
-                                <th style="width: 15%;">Importe ($)</th>
-                                <th style="width: 15%;">Medio de Pago</th>
-                                <th style="width: 10%;">Nombre Deudor</th>
-                                <th style="width: 3%;"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaCajaCuerpo">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="seccion-deudores" class="tarjeta-blanca hidden" style="display:flex; flex-direction:column; gap:20px;">
-            <div style="display:flex; justify-content:between; align-items:center;">
-                <h3 class="titulo-seccion" style="margin:0; border:none;">👥 Estado Balanceado de Clientes Deudores</h3>
-                <div style="display:flex; gap:6px;">
-                    <input type="text" id="nuevoDeudorNombre" class="table-input uppercase" style="width:200px;" placeholder="Nombre Nuevo Cliente">
-                    <button onclick="crearDeudorFichaManual()" class="btn-accion btn-primario">➕ Crear Ficha</button>
-                </div>
-            </div>
-
-            <div style="overflow-x:auto; border:1px solid #e2e8f0; border-radius:10px;">
-                <table class="tabla-interactiva">
-                    <thead>
-                        <tr>
-                            <th>Nombre Deudor</th>
-                            <th>Monto Acumulado Pendiente ($)</th>
-                            <th>Última Actualización</th>
-                            <th style="text-align: center; width: 300px;">Acciones de Amortización</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tablaDeudoresCuerpo">
-                        </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="seccion-proveedores" class="grid-paneles hidden">
-            <div class="tarjeta-blanca">
-                <h3 class="titulo-seccion">📦 Registrar Egreso / Compra</h3>
-                <div class="bloque-formulario">
-                    <div>
-                        <label style="font-size:11px; font-weight:bold; color:#475569;">PROVEEDOR / DISTRIBUIDOR</label>
-                        <input type="text" id="provNombre" class="table-input uppercase" placeholder="Ej: Distribuidora Oeste">
-                    </div>
-                    <div>
-                        <label style="font-size:11px; font-weight:bold; color:#475569;">TIPO DE COMPROBANTE</label>
-                        <select id="provTipo" class="table-input">
-                            <option value="Factura A">Factura A</option>
-                            <option value="Factura B/C">Factura B/C</option>
-                            <option value="Remito Comercial">Remito Comercial</option>
-                            <option value="Presupuesto / Otro">Presupuesto / Otro</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="font-size:11px; font-weight:bold; color:#475569;">NRO IDENTIFICADOR / CONTROL</label>
-                        <input type="text" id="provComprobante" class="table-input" placeholder="0001-00024412">
-                    </div>
-                    <div>
-                        <label style="font-size:11px; font-weight:bold; color:#475569;">MONTO TOTAL INVERTIDO ($)</label>
-                        <input type="number" id="provMonto" class="table-input" placeholder="0.00">
-                    </div>
-                    <button onclick="asentarEgresoProveedor()" class="btn-accion btn-alerta" style="width:100%;">
-                        💾 Confirmar Inversión
-                    </button>
-                </div>
-            </div>
-
-            <div class="tarjeta-blanca" style="display:flex; flex-direction:column; gap:15px;">
-                <div style="display:flex; justify-content:between; align-items:center;">
-                    <h3 class="titulo-seccion" style="margin:0; border:none;">📋 Listado de Egresos Operativos</h3>
-                    <button onclick="exportarEgresosExcel()" class="btn-accion btn-exito">📥 Descargar Planilla Egresos (.xlsx)</button>
-                </div>
-                <div style="overflow-x:auto; border:1px solid #e2e8f0; border-radius:10px;">
-                    <table class="tabla-interactiva">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Distribuidor / Proveedor</th>
-                                <th>Documento</th>
-                                <th>Identificador</th>
-                                <th>Monto Acumulado</th>
-                                <th style="width:5%;"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaProveedoresCuerpo">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="seccion-config" class="tarjeta-blanca hidden">
-            <h3 class="titulo-seccion">⚙️ Configuración del Ecosistema de Datos</h3>
-            <div class="bloque-formulario" style="max-width:600px;">
-                <div>
-                    <label style="font-size:11px; font-weight:bold; color:#475569;">LLAVE DE API DE GEMINI (IA AUDITORÍA):</label>
-                    <input type="password" id="apiKeyInput" class="table-input" placeholder="AIzaSy...">
-                    <p style="font-size:11px; color:#64748b; margin-top:4px;">Los tokens se guardan de forma local y privada en tu navegador.</p>
-                </div>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button onclick="guardarConfiguracionesGenerales()" class="btn-accion btn-primario">💾 Guardar Configuración</button>
-                    <button onclick="exportarBackupJSON()" class="btn-accion" style="background-color:#0284c7; color:white;">📥 Generar Copia Completa (JSON)</button>
-                    <input type="file" id="backupJsonInput" accept=".json" class="hidden" onchange="importarBackupJSON(this)">
-                    <button onclick="document.getElementById('backupJsonInput').click()" class="btn-accion" style="background-color:#475569; color:white;">📤 Restaurar Copia (JSON)</button>
-                </div>
-            </div>
-        </div>
-
+<div class="container">
+    <h1>Control de Caja Diaria</h1>
+    
+    <div class="form-group">
+        <input type="text" id="fecha" readonly style="background-color: #e9ecef; max-width: 150px;" title="Fecha automática de trabajo">
+        <input type="text" id="detalle" placeholder="Concepto / Detalle" required autocomplete="off">
+        <input type="number" id="monto" placeholder="Monto ($)" required min="0" step="any">
+        <select id="condicion" onchange="toggleDeudorField()">
+            <option value="Efectivo">Efectivo</option>
+            <option value="Mercado Pago">Mercado Pago</option>
+            <option value="Tarjeta">Tarjeta</option>
+            <option value="DEBE">DEBE (Fiado)</option>
+        </select>
+        <input type="text" id="deudor" placeholder="Nombre del Deudor" class="hidden" style="text-transform: uppercase;">
+        <button onclick="agregarItem()">Agregar</button>
     </div>
 
-    <script>
-        // --- NÚCLEO OPERATIVO INDEXADO ---
-        let itemsCajaDelDia = [];
-        let listaDeudoresCentral = [];
-        let listaProveedoresCentral = [];
-        
-        let listaArchivosEnCola = [];
-        let grabadorVozInstancia = null;
-        let fragmentosAudioCola = [];
+    <div class="form-group" style="justify-content: flex-end;">
+        <input type="file" id="importExcel" accept=".xlsx, .xls" style="display: none;" onchange="importarExcel(this)">
+        <button onclick="document.getElementById('importExcel').click()" class="btn-export" style="background-color: #6c757d;">Cargar Excel</button>
+        <button onclick="exportarExcel()" class="btn-export">Exportar Excel</button>
+        <button onclick="limpiarCaja()" class="btn-clear">Limpiar Caja</button>
+    </div>
 
-        // 📅 LÓGICA DE CONTROL DE FECHAS SEGÚN NEGOCIO
-        function establecerFechaCajaLogica() {
-            let hoy = new Date();
-            let diaSemana = hoy.getDay(); // 0 = Domingo, 1 = Lunes...
-            let fechaObjetivo = new Date(hoy);
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Concepto / Detalle</th>
+                <th>Monto</th>
+                <th>Medio de Pago</th>
+                <th>Deudor</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="tablaCuerpo"></tbody>
+    </table>
 
-            if (diaSemana === 1) { // Si hoy es Lunes
-                // Verificamos si ya cargamos la caja del viernes analizando los items existentes
-                let fViernes = new Date(hoy);
-                fViernes.setDate(hoy.getDate() - 3);
-                let tagViernes = fViernes.toLocaleDateString('es-AR').replace(/\//g, '-');
+    <div class="totals">
+        <div class="total-item" style="color: #218838;">Efectivo: $<span id="totalEfectivo">0.00</span></div>
+        <div class="total-item" style="color: #0069d9;">Mercado Pago: $<span id="totalMP">0.00</span></div>
+        <div class="total-item" style="color: #6f42c1;">Tarjeta: $<span id="totalTarjeta">0.00</span></div>
+        <div class="total-item" style="color: #dc3545;">Debe: $<span id="totalDebe">0.00</span></div>
+    </div>
+</div>
 
-                let yaExisteViernes = itemsCajaDelDia.some(i => i.fecha === tagViernes);
+<script>
+    let items = JSON.parse(localStorage.getItem('cajaItems')) || [];
 
-                if (!yaExisteViernes) {
-                    fechaObjetivo.setDate(hoy.getDate() - 3); // Apunta al Viernes
-                } else {
-                    fechaObjetivo.setDate(hoy.getDate() - 2); // Apunta al Sábado
-                }
-            } else if (diaSemana === 0) { // Domingo apunta a Sábado
-                fechaObjetivo.setDate(hoy.getDate() - 1);
-            } else { // Cualquier otro día apunta al día anterior exacto
-                fechaObjetivo.setDate(hoy.getDate() - 1);
+    function establecerFechaAutomatica() {
+        let hoy = new Date();
+        let diaSemana = hoy.getDay(); 
+        let fechaObjetivo = new Date(hoy);
+
+        if (diaSemana === 1) { 
+            let fViernes = new Date(hoy);
+            fViernes.setDate(hoy.getDate() - 3);
+            let tagViernes = fViernes.toLocaleDateString('es-AR').replace(/\//g, '-');
+            let yaExisteViernes = items.some(i => i.fecha === tagViernes);
+
+            if (!yaExisteViernes) {
+                fechaObjetivo.setDate(hoy.getDate() - 3); 
+            } else {
+                fechaObjetivo.setDate(hoy.getDate() - 2); 
             }
-
-            document.getElementById('cajaFechaInput').value = fechaObjetivo.toLocaleDateString('es-AR').replace(/\//g, '-');
+        } else if (diaSemana === 0) { 
+            fechaObjetivo.setDate(hoy.getDate() - 1);
+        } else { 
+            fechaObjetivo.setDate(hoy.getDate() - 1);
         }
 
-        // Configuración inicial de periodos mensuales
-        (function autoarmarFiltroPeriodos() {
-            const selector = document.getElementById('periodoCajaSelector');
-            const hoy = new Date();
-            let mesActual = hoy.getMonth() + 1;
-            let anioActual = hoy.getFullYear();
+        document.getElementById('fecha').value = fechaObjetivo.toLocaleDateString('es-AR').replace(/\//g, '-');
+    }
 
-            selector.innerHTML = "";
-            for(let i=0; i<6; i++) {
-                let m = mesActual - i;
-                let a = anioActual;
-                if(m <= 0) { m += 12; a -= 1; }
-                let stringMes = String(m).padStart(2, '0');
-                let op = document.createElement('option');
-                op.value = `db_caja_${stringMes}_${a}`;
-                op.textContent = `${stringMes} / ${a}`;
-                selector.appendChild(op);
-            }
-            claveLocalStorageCajaActual = selector.value;
-        })();
+    function toggleDeudorField() {
+        const condicion = document.getElementById('condicion').value;
+        const deudorField = document.getElementById('deudor');
+        if (condicion === 'DEBE') {
+            deudorField.classList.remove('hidden');
+            deudorField.required = true;
+        } else {
+            deudorField.classList.add('hidden');
+            deudorField.required = false;
+            deudorField.value = '';
+        }
+    }
 
-        let partesClave = claveLocalStorageCajaActual.split('_');
-        let claveLocalStorageDeudoresActual = `db_deudores_${partesClave[2]}_${partesClave[3]}`;
-        let claveLocalStorageProveedoresActual = `db_proveedores_${partesClave[2]}_${partesClave[3]}`;
+    function agregarItem() {
+        const fecha = document.getElementById('fecha').value;
+        const detalle = document.getElementById('detalle').value.trim();
+        const monto = parseFloat(document.getElementById('monto').value);
+        const condicion = document.getElementById('condicion').value;
+        const deudor = document.getElementById('deudor').value.trim().toUpperCase();
 
-        function conmutarIndiceMensualCaja() {
-            claveLocalStorageCajaActual = document.getElementById('periodoCajaSelector').value;
-            let partes = claveLocalStorageCajaActual.split('_');
-            claveLocalStorageDeudoresActual = `db_deudores_${partes[2]}_${partes[3]}`;
-            claveLocalStorageProveedoresActual = `db_proveedores_${partes[2]}_${partes[3]}`;
-            
-            cargarDatosDesdeLocalStorage();
+        if (!detalle || isNaN(monto) || monto <= 0) {
+            alert('Por favor complete Detalle y Monto correctamente.');
+            return;
+        }
+        if (condicion === 'DEBE' && !deudor) {
+            alert('Por favor ingrese el nombre del deudor.');
+            return;
         }
 
-        function cargarDatosDesdeLocalStorage() {
-            const c = localStorage.getItem(claveLocalStorageCajaActual);
-            const d = localStorage.getItem(claveLocalStorageDeudoresActual);
-            const p = localStorage.getItem(claveLocalStorageProveedoresActual);
-
-            itemsCajaDelDia = c ? JSON.parse(c) : [];
-            listaDeudoresCentral = d ? JSON.parse(d) : [];
-            listaProveedoresCentral = p ? JSON.parse(p) : [];
-
-            // Sincronización de fiados si la base de deudores se inicializa vacía
-            if(listaDeudoresCentral.length === 0 && itemsCajaDelDia.length > 0) {
-                let mapa = {};
-                itemsCajaDelDia.forEach(i => {
-                    if(i.condicion === 'DEBE' && i.deudor) {
-                        mapa[i.deudor] = (mapa[i.deudor] || 0) + i.monto;
-                    }
-                });
-                for(let nom in mapa) {
-                    listaDeudoresCentral.push({ deudor: nom, saldo: mapa[nom], ultimaActualizacion: obtenerFechaDeHoy() });
-                }
-                localStorage.setItem(claveLocalStorageDeudoresActual, JSON.stringify(listaDeudoresCentral));
-            }
-
-            renderizarTablaCaja();
-            actualizarVistaDeudores();
-            renderizarTablaProveedores();
-            establecerFechaCajaLogica();
-        }
-
-        function persistirTablas() {
-            localStorage.setItem(claveLocalStorageCajaActual, JSON.stringify(itemsCajaDelDia));
-            localStorage.setItem(claveLocalStorageDeudoresActual, JSON.stringify(listaDeudoresCentral));
-            localStorage.setItem(claveLocalStorageProveedoresActual, JSON.stringify(listaProveedoresCentral));
-        }
-
-        function obtenerFechaDeHoy() {
-            return new Date().toLocaleDateString('es-AR').replace(/\//g, '-');
-        }
-
-        function activarPestaña(id) {
-            document.getElementById('seccion-caja').classList.add('hidden');
-            document.getElementById('seccion-deudores').classList.add('hidden');
-            document.getElementById('seccion-proveedores').classList.add('hidden');
-            document.getElementById('seccion-config').classList.add('hidden');
-
-            document.getElementById('tab-caja').style.background = '#e2e8f0'; document.getElementById('tab-caja').style.color = '#334155';
-            document.getElementById('tab-deudores').style.background = '#e2e8f0'; document.getElementById('tab-deudores').style.color = '#334155';
-            document.getElementById('tab-proveedores').style.background = '#e2e8f0'; document.getElementById('tab-proveedores').style.color = '#334155';
-            document.getElementById('tab-config').style.background = '#e2e8f0'; document.getElementById('tab-config').style.color = '#334155';
-
-            if(id === 'caja') {
-                document.getElementById('seccion-caja').classList.remove('hidden');
-                document.getElementById('tab-caja').style.background = 'var(--azul-premium)';
-                document.getElementById('tab-caja').style.color = 'white';
-            } else if(id === 'deudores') {
-                document.getElementById('seccion-deudores').classList.remove('hidden');
-                document.getElementById('tab-deudores').style.background = 'var(--azul-premium)';
-                document.getElementById('tab-deudores').style.color = 'white';
-            } else if(id === 'proveedores') {
-                document.getElementById('seccion-proveedores').classList.remove('hidden');
-                document.getElementById('tab-proveedores').style.background = 'var(--azul-premium)';
-                document.getElementById('tab-proveedores').style.color = 'white';
-            } else if(id === 'config') {
-                document.getElementById('seccion-config').classList.remove('hidden');
-                document.getElementById('tab-config').style.background = 'var(--azul-premium)';
-                document.getElementById('tab-config').style.color = 'white';
-            }
-        }
-
-        function alternarFilaDeudorManual() {
-            let cond = document.getElementById('cajaCondicionInput').value;
-            document.getElementById('filaDeudorManual').style.display = (cond === 'DEBE') ? 'block' : 'none';
-        }
-
-        function asentarCajaManualRapido() {
-            const fecha = document.getElementById('cajaFechaInput').value;
-            const detalle = document.getElementById('cajaDetalleInput').value.trim();
-            const monto = parseFloat(document.getElementById('cajaMontoInput').value);
-            const condicion = document.getElementById('cajaCondicionInput').value;
-            const deudor = document.getElementById('cajaDeudorInput').value.trim().toUpperCase();
-
-            if(!detalle) return alert("Por favor, ingresá un Concepto / Detalle válido.");
-            if(isNaN(monto) || monto <= 0) return alert("El monto debe ser un número positivo.");
-
-            if(condicion === 'DEBE' && !deudor) return alert("Debes asignar un cliente deudor para registrar el fiado.");
-
-            let item = { id: 'manual_' + Date.now() + '_' + Math.random().toString(36).substr(2,4), fecha, detalle, monto, condicion, deudor: condicion === 'DEBE' ? deudor : '' };
-            itemsCajaDelDia.push(item);
-
-            if(condicion === 'DEBE') {
-                let f = listaDeudoresCentral.find(d => d.deudor === deudor);
-                if(f) { f.saldo += monto; f.ultimaActualizacion = fecha; }
-                else { listaDeudoresCentral.push({ deudor: deudor, saldo: monto, ultimaActualizacion: fecha }); }
-            }
-
-            persistirTablas();
-            renderizarTablaCaja();
-            actualizarVistaDeudores();
-
-            document.getElementById('cajaMontoInput').value = "";
-            document.getElementById('cajaDeudorInput').value = "";
-            document.getElementById('cajaCondicionInput').value = "Efectivo";
-            alternarFilaDeudorManual();
-            establecerFechaCajaLogica();
-        }
-
-        function eliminarItemCaja(id) {
-            let item = itemsCajaDelDia.find(i => i.id === id);
-            if(!item) return;
-
-            if(item.condicion === 'DEBE' && item.deudor) {
-                let f = listaDeudoresCentral.find(d => d.deudor === item.deudor);
-                if(f) {
-                    f.saldo -= item.monto;
-                    if(f.saldo < 0) f.saldo = 0;
-                    f.ultimaActualizacion = obtenerFechaDeHoy();
-                }
-            }
-
-            itemsCajaDelDia = itemsCajaDelDia.filter(i => i.id !== id);
-            persistirTablas();
-            renderizarTablaCaja();
-            actualizarVistaDeudores();
-            establecerFechaCajaLogica();
-        }
-
-        function renderizarTablaCaja() {
-            const tbody = document.getElementById('tablaCajaCuerpo');
-            tbody.innerHTML = "";
-
-            let ef = 0, mp = 0, tj = 0, db = 0;
-
-            itemsCajaDelDia.forEach(i => {
-                let condVisual = i.condicion;
-                if(condVisual === 'P') condVisual = 'Efectivo';
-                if(condVisual === 'MP') condVisual = 'Mercado Pago';
-                if(condVisual === 'T') condVisual = 'Tarjeta';
-
-                if(condVisual === 'Efectivo') ef += i.monto;
-                if(condVisual === 'Mercado Pago') mp += i.monto;
-                if(condVisual === 'Tarjeta') tj += i.monto;
-                if(condVisual === 'DEBE') db += i.monto;
-
-                let badge = 'badge-efectivo';
-                if(condVisual === 'Mercado Pago') badge = 'badge-mp';
-                if(condVisual === 'Tarjeta') badge = 'badge-tarjeta';
-                if(condVisual === 'DEBE') badge = 'badge-debe';
-
-                let tr = document.createElement('tr');
-                if(i.condicion === 'DEBE') tr.style.backgroundColor = '#fef08a';
-
-                tr.innerHTML = `
-                    <td>${i.fecha}</td>
-                    <td style="font-weight:600;">${i.detalle}</td>
-                    <td style="font-weight:700;">$${i.monto.toLocaleString('es-AR')}</td>
-                    <td><span class="badge-condicion ${badge}">${condVisual}</span></td>
-                    <td style="font-weight:bold; color:var(--rojo-alerta);">${i.deudor || '-'}</td>
-                    <td><button onclick="eliminarItemCaja('${i.id}')" style="background:none; border:none; cursor:pointer; color:#94a3b8;">🗑️</button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            document.getElementById('mefectivo').textContent = `$${ef.toLocaleString('es-AR')}`;
-            document.getElementById('mmp').textContent = `$${mp.toLocaleString('es-AR')}`;
-            document.getElementById('mtarjeta').textContent = `$${tj.toLocaleString('es-AR')}`;
-            document.getElementById('mdebe').textContent = `$${db.toLocaleString('es-AR')}`;
-        }
-
-        // --- GESTIÓN DE DEUDORES ---
-        function crearDeudorFichaManual() {
-            let nom = document.getElementById('nuevoDeudorNombre').value.trim().toUpperCase();
-            if(!nom) return alert("Ingresa un nombre de cliente.");
-            if(listaDeudoresCentral.some(d => d.deudor === nom)) return alert("El cliente ya posee una ficha de cuenta corriente.");
-
-            listaDeudoresCentral.push({ deudor: nom, saldo: 0, ultimaActualizacion: obtenerFechaDeHoy() });
-            persistirTablas();
-            actualizarVistaDeudores();
-            document.getElementById('nuevoDeudorNombre').value = "";
-        }
-
-        function amortizarDeudaFicha(nombreDeudor, tipo) {
-            let f = listaDeudoresCentral.find(d => d.deudor === nombreDeudor);
-            if(!f) return;
-
-            let stringMonto = prompt(`Ficha de ${nombreDeudor}. Saldo pendiente: $${f.saldo}.\nIngresa el importe a procesar:`);
-            let monto = parseFloat(stringMonto);
-            if(isNaN(monto) || monto <= 0) return;
-
-            let fecha = obtenerFechaDeHoy();
-
-            if(tipo === 'PAGO') {
-                f.saldo -= monto;
-                if(f.saldo < 0) f.saldo = 0;
-                f.ultimaActualizacion = fecha;
-
-                itemsCajaDelDia.push({
-                    id: 'pago_deuda_' + Date.now(),
-                    fecha: document.getElementById('cajaFechaInput').value,
-                    detalle: `PAGO RECAUDACIÓN CUENTA CORRIENTE DE ${nombreDeudor}`,
-                    monto: monto,
-                    condicion: 'Efectivo',
-                    deudor: ''
-                });
-            } else if(tipo === 'CARGO') {
-                f.saldo += monto;
-                f.ultimaActualizacion = fecha;
-
-                itemsCajaDelDia.push({
-                    id: 'cargo_deuda_' + Date.now(),
-                    fecha: document.getElementById('cajaFechaInput').value,
-                    detalle: `VENTA EN CUENTA CORRIENTE (RECARGO MANUAL) - ${nombreDeudor}`,
-                    monto: monto,
-                    condicion: 'DEBE',
-                    deudor: nombreDeudor
-                });
-            }
-
-            persistirTablas();
-            renderizarTablaCaja();
-            actualizarVistaDeudores();
-            establecerFechaCajaLogica();
-        }
-
-        function actualizarVistaDeudores() {
-            const tbody = document.getElementById('tablaDeudoresCuerpo');
-            tbody.innerHTML = "";
-
-            if(listaDeudoresCentral.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">No hay cuentas corrientes registradas en este mes.</td></tr>`;
-                return;
-            }
-
-            listaDeudoresCentral.forEach(d => {
-                let tr = document.createElement('tr');
-                if(d.saldo > 0) tr.style.fontWeight = '600';
-
-                tr.innerHTML = `
-                    <td style="font-weight:bold; color:#334155;">${d.deudor}</td>
-                    <td style="color:${d.saldo > 0 ? 'var(--rojo-alerta)' : 'var(--verde-exito)'}; font-size:13px;">$${d.saldo.toLocaleString('es-AR')}</td>
-                    <td style="color:#64748b;">${d.ultimaActualizacion}</td>
-                    <td style="text-align:center;">
-                        <button onclick="amortizarDeudaFicha('${d.deudor}', 'PAGO')" class="btn-accion btn-exito" style="padding:4px 10px; font-size:11px;">💵 Entró Pago</button>
-                        <button onclick="amortizarDeudaFicha('${d.deudor}', 'CARGO')" class="btn-accion btn-alerta" style="padding:4px 10px; font-size:11px;">➕ Fiado Nuevo</button>
-                        <button onclick="eliminarFichaCompletaDeudor('${d.deudor}')" class="btn-accion btn-danger" style="padding:4px 8px; font-size:11px;">🗑️</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function eliminarFichaCompletaDeudor(nombre) {
-            if(confirm(`¿Deseas remover la cuenta corriente de ${nombre}? No alterará los totales históricos de caja.`)) {
-                listaDeudoresCentral = listaDeudoresCentral.filter(d => d.deudor !== nombre);
-                persistirTablas();
-                actualizarVistaDeudores();
-            }
-        }
-
-        // --- EGRESOS / PROVEEDORES ---
-        function asentarEgresoProveedor() {
-            let proveedor = document.getElementById('provNombre').value.trim().toUpperCase();
-            let tipo = document.getElementById('provTipo').value;
-            let comprobante = document.getElementById('provComprobante').value.trim();
-            let monto = parseFloat(document.getElementById('provMonto').value);
-
-            if(!proveedor || !comprobante || isNaN(monto) || monto <= 0) {
-                return alert("Completa todos los campos del egreso con valores válidos.");
-            }
-
-            listaProveedoresCentral.push({
-                id: 'egreso_' + Date.now(),
-                fecha: obtenerFechaDeHoy(),
-                proveedor,
-                tipo,
-                comprobante,
-                monto
-            });
-
-            persistirTablas();
-            renderizarTablaProveedores();
-
-            document.getElementById('provNombre').value = "";
-            document.getElementById('provComprobante').value = "";
-            document.getElementById('provMonto').value = "";
-        }
-
-        function eliminarEgreso(id) {
-            listaProveedoresCentral = listaProveedoresCentral.filter(p => p.id !== id);
-            persistirTablas();
-            renderizarTablaProveedores();
-        }
-
-        function renderizarTablaProveedores() {
-            const tbody = document.getElementById('tablaProveedoresCuerpo');
-            tbody.innerHTML = "";
-
-            if(listaProveedoresCentral.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:20px;">No hay facturas ni remitos registrados en este mes.</td></tr>`;
-                return;
-            }
-
-            listaProveedoresCentral.forEach(p => {
-                let tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${p.fecha}</td>
-                    <td style="font-weight:bold; color:var(--naranja-proveedor);">${p.proveedor}</td>
-                    <td><span style="font-size:11px; font-weight:bold; color:#475569;">${p.tipo}</span></td>
-                    <td style="font-family:monospace;">${p.comprobante}</td>
-                    <td style="font-weight:700; color:var(--rojo-critico);">$${p.monto.toLocaleString('es-AR')}</td>
-                    <td><button onclick="eliminarEgreso('${p.id}')" style="background:none; border:none; cursor:pointer; color:#94a3b8;">🗑️</button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // --- EXPORTAR EXCEL CON FORMATO SÓLIDO Y TOTALES CONSOLIDADOS ---
-        function exportarCajaExcelConColor() {
-            if(itemsCajaDelDia.length === 0) return alert("No hay datos en la caja actual para exportar.");
-            
-            let totEf = 0, totMP = 0, totT = 0, totDebe = 0;
-            
-            let excelEstructura = `
-            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-            <head><meta charset="utf-8"></head>
-            <body>
-            <table border="1">
-                <tr style="background-color: #1e40af; color: white; font-weight: bold;">
-                    <th>Fecha</th>
-                    <th>Concepto / Detalle</th>
-                    <th>Monto ($)</th>
-                    <th>Medio de Pago</th>
-                    <th>Deudor Relacionado</th>
-                </tr>`;
-            
-            itemsCajaDelDia.forEach(i => {
-                let condCompleta = i.condicion;
-                if(condCompleta === 'P' || condCompleta === 'Efectivo') { condCompleta = 'Efectivo'; totEf += i.monto; }
-                else if(condCompleta === 'MP' || condCompleta === 'Mercado Pago') { condCompleta = 'Mercado Pago'; totMP += i.monto; }
-                else if(condCompleta === 'T' || condCompleta === 'Tarjeta') { condCompleta = 'Tarjeta'; totT += i.monto; }
-                else if(condCompleta === 'DEBE') { totDebe += i.monto; }
-
-                let estiloAlerta = i.condicion === 'DEBE' ? ' style="background-color: #fef08a; font-weight: bold; color:#b91c1c;"' : '';
-                
-                excelEstructura += `
-                <tr${estiloAlerta}>
-                    <td>${i.fecha}</td>
-                    <td>${i.detalle}</td>
-                    <td>${i.monto}</td>
-                    <td>${condCompleta}</td>
-                    <td>${i.deudor || ''}</td>
-                </tr>`;
-            });
-
-            excelEstructura += `<tr><td colspan="5" style="background-color: #f1f5f9;"></td></tr>`;
-
-            // SECCIÓN DE TOTALES COMPLETA
-            excelEstructura += `<tr style="font-weight: bold; background-color: #e2e8f0;"><td colspan="2">TOTAL EFECTIVO:</td><td>${totEf}</td><td>Efectivo</td><td></td></tr>`;
-            excelEstructura += `<tr style="font-weight: bold; background-color: #e2e8f0;"><td colspan="2">TOTAL MERCADO PAGO:</td><td>${totMP}</td><td>Mercado Pago</td><td></td></tr>`;
-            excelEstructura += `<tr style="font-weight: bold; background-color: #e2e8f0;"><td colspan="2">TOTAL TARJETA:</td><td>${totT}</td><td>Tarjeta</td><td></td></tr>`;
-            excelEstructura += `<tr style="font-weight: bold; background-color: #fee2e2; color: #b91c1c;"><td colspan="2">TOTAL FIADOS (DEBE):</td><td>${totDebe}</td><td>DEBE</td><td></td></tr>`;
-            
-            let granTotalEntrada = totEf + totMP + totT;
-            excelEstructura += `<tr style="font-weight: black; background-color: #10b981; color: white;"><td colspan="2">TOTAL ENTRADA REAL:</td><td>${granTotalEntrada}</td><td>CONSOLIDADO</td><td></td></tr>`;
-
-            excelEstructura += `</table></body></html>`;
-
-            const blobObjeto = new Blob([excelEstructura], { type: 'application/vnd.ms-excel' });
-            const despachadorLink = document.createElement('a');
-            despachadorLink.href = URL.createObjectURL(blobObjeto);
-            despachadorLink.download = `Cierre_Caja_Compilado_${claveLocalStorageCajaActual}.xls`;
-            despachadorLink.click();
-        }
-
-        function exportarEgresosExcel() {
-            if(listaProveedoresCentral.length === 0) return alert("No hay egresos cargados para exportar.");
-            const libroTrabajo = XLSX.utils.book_new(); 
-            const hojaDatos = XLSX.utils.json_to_sheet(listaProveedoresCentral.map(p => ({ "Fecha": p.fecha, "Distribuidor": p.proveedor, "Tipo Documento": p.tipo, "Identificador": p.comprobante, "Monto Total Invertido": p.monto })));
-            XLSX.utils.book_append_sheet(libroTrabajo, hojaDatos, "Gastos Mensuales");
-            XLSX.writeFile(libroTrabajo, `Listado_Egresos_${claveLocalStorageProveedoresActual}.xlsx`);
-        }
-
-        // --- PROCESADOR TOLERANTE DE EXCEL (ACEPTA VIEJOS Y NUEVOS FORMATOS) ---
-        function importarExcelCaja(inputElement) {
-            const archivo = inputElement.files[0];
-            if (!archivo) return;
-            
-            const lector = new FileReader();
-            lector.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const libro = XLSX.read(data, { type: 'array' });
-                    const primeraHoja = libro.SheetNames[0];
-                    const hoja = libro.Sheets[primeraHoja];
-                    
-                    const filas = XLSX.utils.sheet_to_json(hoja, { header: 1 });
-                    if(filas.length <= 1) return alert("El archivo no posee registros procesables.");
-
-                    let headers = filas[0].map(h => String(h).trim().toUpperCase());
-                    let idxFecha = headers.findIndex(h => h.includes("FECHA"));
-                    let idxDetalle = headers.findIndex(h => h.includes("CONCEPTO") || h.includes("DETALLE") || h.includes("ARTICULO"));
-                    let idxMonto = headers.findIndex(h => h.includes("MONTO") || h.includes("IMPORTE"));
-                    let idxCondicion = headers.findIndex(h => h.includes("PAGO") || h.includes("MEDIO"));
-                    let idxDeudor = headers.findIndex(h => h.includes("DEUDOR"));
-
-                    if(idxFecha === -1 || idxDetalle === -1 || idxMonto === -1) {
-                        return alert("No se pudo mapear la cabecera del Excel de forma automatizada.");
-                    }
-
-                    let nuevosItems = [];
-
-                    for(let k = 1; k < filas.length; k++) {
-                        let fila = filas[k];
-                        if(!fila || fila.length === 0) continue;
-
-                        let celdaDetalle = String(fila[idxDetalle] || '').trim();
-                        if(celdaDetalle.startsWith("TOTAL") || !fila[idxFecha]) continue;
-
-                        let rawCond = String(fila[idxCondicion] || '').trim();
-                        let condicionNormalizada = "Efectivo";
-                        
-                        if(rawCond === 'P' || rawCond.toUpperCase() === 'EFECTIVO') condicionNormalizada = 'Efectivo';
-                        else if(rawCond === 'MP' || rawCond.toUpperCase().includes('MERCADO')) condicionNormalizada = 'Mercado Pago';
-                        else if(rawCond === 'T' || rawCond.toUpperCase().includes('TARJETA')) condicionNormalizada = 'Tarjeta';
-                        else if(rawCond.toUpperCase() === 'DEBE') condicionNormalizada = 'DEBE';
-
-                        let montoNumerico = parseFloat(String(fila[idxMonto]).replace(/[^0-9.-]/g, ''));
-                        if(isNaN(montoNumerico)) continue;
-
-                        let fechaLimpia = String(fila[idxFecha]).trim().replace(/\//g, '-');
-
-                        nuevosItems.push({
-                            id: 'excel_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                            fecha: fechaLimpia,
-                            detalle: celdaDetalle,
-                            monto: montoNumerico,
-                            condicion: condicionNormalizada,
-                            deudor: condicionNormalizada === 'DEBE' ? String(fila[idxDeudor] || '').trim().toUpperCase() : ''
-                        });
-                    }
-
-                    if(nuevosItems.length > 0) {
-                        if(confirm(`Se acoplaron exitosamente ${nuevosItems.length} registros del Excel. ¿Confirmas su guardado en el índice activo?`)) {
-                            itemsCajaDelDia = itemsCajaDelDia.concat(nuevosItems);
-                            persistirTablas();
-                            renderizarTablaCaja();
-                            actualizarVistaDeudores();
-                            establecerFechaCajaLogica();
-                        }
-                    } else {
-                        alert("No se hallaron filas estructuradas válidas en la planilla.");
-                    }
-
-                } catch (error) {
-                    alert("Error crítico interpretando la matriz del Excel.");
-                }
-            };
-            lector.readAsArrayBuffer(archivo);
-            inputElement.value = "";
-        }
-
-        function limpiarCajaCompleta() {
-            if(confirm("⚠ Eliminarás TODOS los registros del mes actual. Esta operación no se puede deshacer.")) {
-                itemsCajaDelDia = [];
-                persistirTablas();
-                renderizarTablaCaja();
-                establecerFechaCajaLogica();
-            }
-        }
-
-        function guardarConfiguracionesGenerales() {
-            const key = document.getElementById('apiKeyInput').value.trim();
-            localStorage.setItem('gemini_api_keys_v2', key);
-            alert("Llave criptográfica de IA indexada con éxito en local.");
-        }
-
-        function exportarBackupJSON() {
-            const paquete = { itemsCajaDelDia, listaDeudoresCentral, listaProveedoresCentral, apiKeys: document.getElementById('apiKeyInput').value.trim(), periodo: claveLocalStorageCajaActual };
-            const stringData = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(paquete));
-            const disparador = document.createElement('a');
-            disparador.setAttribute("href", stringData);
-            disparador.setAttribute("download", `Backup_${claveLocalStorageCajaActual}.json`);
-            document.body.appendChild(disparador);
-            disparador.click();
-            disparador.remove();
-        }
-
-        function importarBackupJSON(inputElement) {
-            const archivoJSON = inputElement.files[0];
-            if (!archivoJSON) return;
-            const lector = new FileReader();
-            lector.onload = function(e) {
-                try {
-                    const desc = JSON.parse(e.target.result);
-                    if (desc.itemsCajaDelDia) {
-                        let targetCaja = desc.periodo || claveLocalStorageCajaActual;
-                        let partes = targetCaja.split('_');
-                        let sufijo = (partes.length >= 3) ? `${partes[2]}_${partes[3]}` : "general";
-
-                        itemsCajaDelDia = desc.itemsCajaDelDia;
-                        listaDeudoresCentral = desc.listaDeudoresCentral || [];
-                        listaProveedoresCentral = desc.listaProveedoresCentral || [];
-                        
-                        localStorage.setItem(`db_caja_${sufijo}`, JSON.stringify(itemsCajaDelDia));
-                        localStorage.setItem(`db_deudores_${sufijo}`, JSON.stringify(listaDeudoresCentral));
-                        localStorage.setItem(`db_proveedores_${sufijo}`, JSON.stringify(listaProveedoresCentral));
-                        
-                        cargarDatosDesdeLocalStorage();
-                        alert("¡Respaldo JSON inyectado y sincronizado al 100%!");
-                    }
-                } catch(error) { alert("Error parseando archivo: " + error.message); }
-            };
-            lector.readAsText(archivoJSON);
-        }
-
-        // --- SUBSISTEMA DE MULTIMEDIA E IA (CONECTIVA BOT INTEGRATION) ---
-        function procesarColaArchivos(input) {
-            for(let file of input.files) {
-                if(listaArchivosEnCola.some(f => f.name === file.name)) continue;
-                listaArchivosEnCola.push(file);
-            }
-            renderizarPreviews();
-        }
-
-        function removerArchivoCola(idx) {
-            listaArchivosEnCola.splice(idx, 1);
-            renderizarPreviews();
-        }
-
-        function renderizarPreviews() {
-            const cont = document.getElementById('contenedorPreviews');
-            cont.innerHTML = "";
-            listaArchivosEnCola.forEach((file, i) => {
-                let url = URL.createObjectURL(file);
-                let box = document.createElement('div');
-                box.className = "preview-box";
-                box.innerHTML = `<img src="${url}"><button class="btn-remove-preview" onclick="removerArchivoCola(${i})">✕</button>`;
-                cont.appendChild(box);
-            });
-        }
-
-        function conmutarGrabadorVoz() {
-            const btn = document.getElementById('btnGrabacion');
-            const lbl = document.getElementById('audioStatusLabel');
-
-            if(grabadorVozInstancia && grabadorVozInstancia.state === "recording") {
-                grabadorVozInstancia.stop();
-                btn.textContent = "🎙️ Iniciar Dictado";
-                btn.style.backgroundColor = "#ef4444";
-                lbl.style.display = "none";
-                return;
-            }
-
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    grabadorVozInstancia = new MediaRecorder(stream);
-                    fragmentosAudioCola = [];
-                    grabadorVozInstancia.ondataavailable = e => { if(e.data.size > 0) fragmentosAudioCola.push(e.data); };
-                    
-                    grabadorVozInstancia.onstop = () => {
-                        lbl.textContent = "✓ Audio en cola listo para procesar.";
-                        lbl.style.color = "var(--verde-exito)";
-                    };
-
-                    grabadorVozInstancia.start();
-                    btn.textContent = "🛑 Detener Grabación";
-                    btn.style.backgroundColor = "#1e293b";
-                    lbl.textContent = "Grabando dictado comercial en vivo...";
-                    lbl.style.color = "var(--rojo-alerta)";
-                    lbl.style.display = "block";
-                }).catch(() => alert("No se pudo inicializar la captura de audio. Verifique permisos."));
-        }
-
-        function limpiarAudioCola() {
-            grabadorVozInstancia = null;
-            fragmentosAudioCola = [];
-            const lbl = document.getElementById('audioStatusLabel');
-            lbl.style.display = "none";
-        }
-
-        async function transformarBlobABase64(blob) {
-            return new Promise((resolve, reject) => {
-                const r = new FileReader();
-                r.onloadend = () => resolve(r.result.split(',')[1]);
-                r.onerror = reject;
-                r.readAsDataURL(blob);
-            });
-        }
-
-        async function ejecutarAuditoriaInteligenteAI() {
-            let key = localStorage.getItem('gemini_api_keys_v2') || document.getElementById('apiKeyInput').value.trim();
-            if(!key) return alert("Primero debes ingresar una Clave de API de Gemini válida en la pestaña de Configuración.");
-
-            if(listaArchivosEnCola.length === 0 && fragmentosAudioCola.length === 0) {
-                return alert("No has adjuntado ninguna captura de pantalla ni audio para auditar.");
-            }
-
-            let partesContenido = [{
-                text: "Eres el auditor contable del negocio. Debes extraer todas las ventas individuales detalladas en las imágenes o dictadas por audio.\n" +
-                      "Responde ESTRICTAMENTE con un arreglo JSON con este formato: [{\"detalle\":\"...\",\"monto\":1234.50,\"condicion\":\"Efectivo|Mercado Pago|Tarjeta|DEBE\",\"deudor\":\"NOMBRE SI ES DEBE\"}].\n" +
-                      "No utilices abreviaturas. Usa exactamente 'Efectivo', 'Mercado Pago', 'Tarjeta' o 'DEBE'. No incluyas markdown ni texto extra."
-            }];
-
-            try {
-                for(let file of listaArchivosEnCola) {
-                    let b64 = await transformarBlobABase64(file);
-                    partesContenido.push({ inlineData: { mimeType: file.type, data: b64 } });
-                }
-
-                if(fragmentosAudioCola.length > 0) {
-                    let audioBlob = new Blob(fragmentosAudioCola, { type: 'audio/webm' });
-                    let b64Audio = await transformarBlobABase64(audioBlob);
-                    partesContenido.push({ inlineData: { mimeType: 'audio/webm', data: b64Audio } });
-                }
-
-                let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: partesContenido }] })
-                });
-
-                let jsonRes = await response.json();
-                let txt = jsonRes.contents[0].parts[0].text.replace(/```json/g, "").replace(/```/g, "").trim();
-                
-                let parseado = JSON.parse(txt);
-                if(Array.isArray(parseado) && parseado.length > 0) {
-                    let targetFecha = document.getElementById('cajaFechaInput').value;
-                    parseado.forEach(item => {
-                        let cond = item.condicion;
-                        if(cond === 'P') cond = 'Efectivo';
-                        if(cond === 'MP') cond = 'Mercado Pago';
-                        if(cond === 'T') cond = 'Tarjeta';
-
-                        let itemNuevo = {
-                            id: 'ai_' + Date.now() + '_' + Math.random().toString(36).substr(2,4),
-                            fecha: targetFecha,
-                            detalle: item.detalle.toUpperCase(),
-                            monto: parseFloat(item.monto),
-                            condicion: cond,
-                            deudor: cond === 'DEBE' ? String(item.deudor || 'ANONIMO').toUpperCase() : ''
-                        };
-                        itemsCajaDelDia.push(itemNuevo);
-
-                        if(cond === 'DEBE' && itemNuevo.deudor) {
-                            let f = listaDeudoresCentral.find(d => d.deudor === itemNuevo.deudor);
-                            if(f) { f.saldo += itemNuevo.monto; f.ultimaActualizacion = targetFecha; }
-                            else { listaDeudoresCentral.push({ deudor: itemNuevo.deudor, saldo: itemNuevo.monto, ultimaActualizacion: targetFecha }); }
-                        }
-                    });
-
-                    persistirTablas();
-                    renderizarTablaCaja();
-                    actualizarVistaDeudores();
-                    
-                    listaArchivosEnCola = [];
-                    limpiarAudioCola();
-                    renderizarPreviews();
-                    establecerFechaCajaLogica();
-                    alert(`¡Auditoría Completa! Se cargaron ${parseado.length} ventas analizadas por IA.`);
-                }
-
-            } catch (err) {
-                alert("Error procesando la auditoría de IA. Verifique su llave de API o formato.");
-            }
-        }
-
-        // Carga inicial al arrancar la ventana
-        window.onload = () => {
-            let keyGuardada = localStorage.getItem('gemini_api_keys_v2');
-            if(keyGuardada) document.getElementById('apiKeyInput').value = keyGuardada;
-            cargarDatosDesdeLocalStorage();
+        const item = {
+            id: Date.now(),
+            fecha,
+            detalle,
+            monto,
+            condicion,
+            deudor: condicion === 'DEBE' ? deudor : ''
         };
-    </script>
+
+        items.push(item);
+        guardarYRenderizar();
+
+        document.getElementById('detalle').value = '';
+        document.getElementById('monto').value = '';
+        document.getElementById('condicion').value = 'Efectivo';
+        toggleDeudorField();
+        establecerFechaAutomatica();
+    }
+
+    function eliminarItem(id) {
+        items = items.filter(item => item.id !== id);
+        guardarYRenderizar();
+        establecerFechaAutomatica();
+    }
+
+    function guardarYRenderizar() {
+        localStorage.setItem('cajaItems', JSON.stringify(items));
+        renderizarTabla();
+    }
+
+    function renderizarTabla() {
+        const tbody = document.getElementById('tablaCuerpo');
+        tbody.innerHTML = '';
+
+        let ef = 0, mp = 0, tj = 0, db = 0;
+
+        items.forEach(item => {
+            let condVisual = item.condicion;
+            if(condVisual === 'P') condVisual = 'Efectivo';
+            if(condVisual === 'MP') condVisual = 'Mercado Pago';
+            if(condVisual === 'T') condVisual = 'Tarjeta';
+
+            if (condVisual === 'Efectivo') ef += item.monto;
+            if (condVisual === 'Mercado Pago') mp += item.monto;
+            if (condVisual === 'Tarjeta') tj += item.monto;
+            if (condVisual === 'DEBE') db += item.monto;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.fecha}</td>
+                <td>${item.detalle}</td>
+                <td>$${item.monto.toFixed(2)}</td>
+                <td>${condVisual}</td>
+                <td>${item.deudor || '-'}</td>
+                <td><button class="delete-btn" onclick="eliminarItem(${item.id})">🗑️</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('totalEfectivo').textContent = ef.toFixed(2);
+        document.getElementById('totalMP').textContent = mp.toFixed(2);
+        document.getElementById('totalTarjeta').textContent = tj.toFixed(2);
+        document.getElementById('totalDebe').textContent = db.toFixed(2);
+    }
+
+    function limpiarCaja() {
+        if (confirm('¿Seguro que querés vaciar la caja actual?')) {
+            items = [];
+            guardarYRenderizar();
+            establecerFechaAutomatica();
+        }
+    }
+
+    function exportarExcel() {
+        if (items.length === 0) {
+            alert('No hay datos para exportar.');
+            return;
+        }
+
+        let totEf = 0, totMP = 0, totT = 0, totDebe = 0;
+        
+        let excelHtml = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head><meta charset="utf-8"></head>
+        <body>
+        <table border="1">
+            <tr style="background-color: #f2f2f2; font-weight: bold;">
+                <th>Fecha</th>
+                <th>Concepto / Detalle</th>
+                <th>Monto ($)</th>
+                <th>Medio de Pago</th>
+                <th>Deudor</th>
+            </tr>`;
+
+        items.forEach(i => {
+            let condCompleta = i.condicion;
+            if (condCompleta === 'P' || condCompleta === 'Efectivo') { condCompleta = 'Efectivo'; totEf += i.monto; }
+            else if (condCompleta === 'MP' || condCompleta === 'Mercado Pago') { condCompleta = 'Mercado Pago'; totMP += i.monto; }
+            else if (condCompleta === 'T' || condCompleta === 'Tarjeta') { condCompleta = 'Tarjeta'; totT += i.monto; }
+            else if (condCompleta === 'DEBE') { totDebe += i.monto; }
+
+            excelHtml += `
+            <tr>
+                <td>${i.fecha}</td>
+                <td>${i.detalle}</td>
+                <td>${i.monto}</td>
+                <td>${condCompleta}</td>
+                <td>${i.deudor || ''}</td>
+            </tr>`;
+        });
+
+        excelHtml += `<tr><td colspan="5"></td></tr>`;
+        excelHtml += `<tr style="font-weight: bold;"><td colspan="2">TOTAL EFECTIVO:</td><td>${totEf}</td><td>Efectivo</td><td></td></tr>`;
+        excelHtml += `<tr style="font-weight: bold;"><td colspan="2">TOTAL MERCADO PAGO:</td><td>${totMP}</td><td>Mercado Pago</td><td></td></tr>`;
+        excelHtml += `<tr style="font-weight: bold;"><td colspan="2">TOTAL TARJETA:</td><td>${totT}</td><td>Tarjeta</td><td></td></tr>`;
+        excelHtml += `<tr style="font-weight: bold; color: #dc3545;"><td colspan="2">TOTAL FIADOS (DEBE):</td><td>${totDebe}</td><td>DEBE</td><td></td></tr>`;
+
+        excelHtml += `</table></body></html>`;
+
+        const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Cierre_Caja_${document.getElementById('fecha').value}.xls`;
+        link.click();
+    }
+
+    function importarExcel(input) {
+        const archivo = input.files[0];
+        if (!archivo) return;
+        
+        const lector = new FileReader();
+        lector.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const libro = XLSX.read(data, { type: 'array' });
+                const primeraHoja = libro.Sheets[libro.SheetNames[0]];
+                const filas = XLSX.utils.sheet_to_json(primeraHoja, { header: 1 });
+                
+                if(filas.length <= 1) return alert("El archivo no tiene registros.");
+
+                let headers = filas[0].map(h => String(h).trim().toUpperCase());
+                let idxFecha = headers.findIndex(h => h.includes("FECHA"));
+                let idxDetalle = headers.findIndex(h => h.includes("CONCEPTO") || h.includes("DETALLE") || h.includes("ARTICULO"));
+                let idxMonto = headers.findIndex(h => h.includes("MONTO") || h.includes("IMPORTE"));
+                let idxCondicion = headers.findIndex(h => h.includes("PAGO") || h.includes("MEDIO"));
+                let idxDeudor = headers.findIndex(h => h.includes("DEUDOR"));
+
+                if(idxFecha === -1 || idxDetalle === -1 || idxMonto === -1) {
+                    return alert("No se pudo leer la cabecera del Excel automáticamente. Revisá los nombres de las columnas.");
+                }
+
+                let nuevosItems = [];
+
+                for(let k = 1; k < filas.length; k++) {
+                    let fila = filas[k];
+                    if(!fila || fila.length === 0 || !fila[idxFecha] || String(fila[idxDetalle]).startsWith("TOTAL")) continue;
+
+                    let rawCond = String(fila[idxCondicion] || '').trim();
+                    let condicionNormalizada = "Efectivo";
+                    if(rawCond === 'P' || rawCond.toUpperCase() === 'EFECTIVO') condicionNormalizada = 'Efectivo';
+                    else if(rawCond === 'MP' || rawCond.toUpperCase().includes('MERCADO')) condicionNormalizada = 'Mercado Pago';
+                    else if(rawCond === 'T' || rawCond.toUpperCase().includes('TARJETA')) condicionNormalizada = 'Tarjeta';
+                    else if(rawCond.toUpperCase() === 'DEBE') condicionNormalizada = 'DEBE';
+
+                    let montoNumerico = parseFloat(String(fila[idxMonto]).replace(/[^0-9.-]/g, ''));
+                    if(isNaN(montoNumerico)) continue;
+
+                    nuevosItems.push({
+                        id: Date.now() + k,
+                        fecha: String(fila[idxFecha]).trim().replace(/\//g, '-'),
+                        detalle: String(fila[idxDetalle]).trim(),
+                        monto: montoNumerico,
+                        condicion: condicionNormalizada,
+                        deudor: condicionNormalizada === 'DEBE' ? String(fila[idxDeudor] || '').trim().toUpperCase() : ''
+                    });
+                }
+
+                if(nuevosItems.length > 0) {
+                    items = items.concat(nuevosItems);
+                    guardarYRenderizar();
+                    establecerFechaAutomatica();
+                    alert(`¡Éxito! Se acoplaron ${nuevosItems.length} registros del Excel.`);
+                } else {
+                    alert("No se encontraron filas válidas.");
+                }
+            } catch (error) {
+                alert("Error interpretando el Excel.");
+            }
+        };
+        lector.readAsArrayBuffer(archivo);
+        input.value = "";
+    }
+
+    window.onload = () => {
+        renderizarTabla();
+        establecerFechaAutomatica();
+    };
+</script>
 </body>
 </html>
