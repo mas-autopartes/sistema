@@ -122,7 +122,8 @@
 
         <div class="tabs">
             <button id="btnTabCaja" class="tab-btn activo" onclick="cambiarTab('cajaDiariaTab', this)">📖 Caja Diaria</button>
-            <button id="btnTabProveedores" class="tab-btn" onclick="cambiarTab('proveedoresTab', this)">🧾 Facturas y Remitos</button>
+            <button id="btnTabProveedores" class="tab-btn" onclick="cambiarTab('proveedoresTab', this)">🧾 Facturas y Remitos (Compras)</button>
+            <button id="btnTabArca" class="tab-btn" onclick="cambiarTab('facturacionArcaTab', this)" style="background: #ecfdf5; color: #047857;">🏛️ Facturación ARCA (Ventas)</button>
             <button id="btnTabDeudores" class="tab-btn" onclick="cambiarTab('deudoresTab', this)">🔴 Historial de Fiados Activos</button>
             <button id="btnTabCalendario" class="tab-btn" onclick="cambiarTab('calendarioTab', this)" style="background: #ede9fe; color: #6d28d9;">📅 Calendario y Cierre Mensual</button>
             <button id="btnTabBalance" class="tab-btn" onclick="cambiarTab('balanceTab', this)" style="background: #eff6ff; color: var(--azul-premium);">📊 Rendimiento y Ganancia</button>
@@ -133,7 +134,8 @@
                 <label>📸 <b>¿Qué documento vas a escanear ahora?:</b></label>
                 <select id="tipoLoteScan">
                     <option value="CAJA">📖 Hoja de Cuaderno (Caja Diaria del Día)</option>
-                    <option value="PROVEEDOR" selected>🧾 Comprobante de Proveedor (Factura o Remito)</option>
+                    <option value="PROVEEDOR" selected>🧾 Comprobante de Proveedor (Compra/Repuestos)</option>
+                    <option value="ARCA">🏛️ Factura de Venta propia (ARCA/AFIP)</option>
                 </select>
             </div>
             <input type="file" id="fotoCuaderno" accept="image/*" multiple onchange="mostrarPreviewsLote()">
@@ -232,6 +234,93 @@
                     </thead>
                     <tbody id="cuerpoTablaProveedores"></tbody>
                 </table>
+            </div>
+        </div>
+
+        <div id="facturacionArcaTab" class="seccion-tab">
+            <div class="contenedor-tabla" style="margin-bottom: 25px; border: 2px solid #6ee7b7; background: #fdfdfd;">
+                <h3 style="margin-top: 0; color: #047857; font-size: 15px;">🏛️ Carga Rápida de Facturación ARCA (lo que facturás como local hacia afuera)</h3>
+                <p style="font-size:12px; color:#64748b; margin-top:-8px;">Esto es independiente de la Caja Diaria: acá cargás lo que declarás/facturás oficialmente por AFIP-ARCA, sea por foto del comprobante, a mano, o importando un respaldo.</p>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+                    <div style="display: flex; flex-direction: column; gap: 4px; width: 150px;">
+                        <label style="font-size: 11px; font-weight: bold; color: #475569;">FECHA</label>
+                        <input type="text" id="arcaFechaInput" class="table-input" style="height: 38px;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px; width: 170px;">
+                        <label style="font-size: 11px; font-weight: bold; color: #475569;">TIPO COMPROBANTE</label>
+                        <select id="arcaTipoInput" class="table-select" style="height: 38px; font-weight: bold;">
+                            <option value="FACTURA A">Factura A</option>
+                            <option value="FACTURA B" selected>Factura B</option>
+                            <option value="FACTURA C">Factura C</option>
+                            <option value="NOTA DE CREDITO">Nota de Crédito</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px;">
+                        <label style="font-size: 11px; font-weight: bold; color: #475569;">CLIENTE (opcional)</label>
+                        <input type="text" id="arcaClienteInput" class="table-input" placeholder="Consumidor final..." style="height: 38px;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px; width: 170px;">
+                        <label style="font-size: 11px; font-weight: bold; color: #475569;">MONTO TOTAL ($)</label>
+                        <input type="number" id="arcaMontoInput" class="table-input" placeholder="0.00" step="any" style="height: 38px; font-weight: bold; font-size: 15px;">
+                    </div>
+                    <button class="btn-accion" style="height: 38px; padding: 0 20px; background:#047857; color:white;" onclick="asentarFacturacionArcaManual()">Asentar</button>
+                </div>
+            </div>
+
+            <div class="contenedor-tabla" style="margin-bottom:25px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="margin:0;">🏛️ Facturas de Venta emitidas (ARCA/AFIP)</h3>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-accion" style="background:#cbd5e1;" onclick="agregarFilaVaciaArca()">➕ Agregar Línea Manual</button>
+                        <button class="btn-accion btn-naranja" onclick="exportarFacturacionArcaExcel()">📊 Exportar Listado (.xlsx)</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 12%;">Fecha</th>
+                            <th style="width: 18%;">Tipo Comprobante</th>
+                            <th style="width: 15%;">Nro Comprob.</th>
+                            <th style="width: 30%;">Cliente</th>
+                            <th style="width: 20%;">Monto Total ($)</th>
+                            <th style="width: 5%;">Remover</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTablaArca"></tbody>
+                </table>
+            </div>
+
+            <div class="contenedor-tabla" style="background:#f0fdf4; border:2px solid #6ee7b7;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom: 15px;">
+                    <h3 style="margin:0; color:#047857;">⚖️ Balance: Facturación ARCA vs Compras a Distribuidores</h3>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <button class="btn-accion" style="background:#e2e8f0; padding:6px 10px;" onclick="cambiarMesArca(-1)">◀</button>
+                        <b id="tituloMesArca" style="min-width:160px; text-align:center; color:#047857;"></b>
+                        <button class="btn-accion" style="background:#e2e8f0; padding:6px 10px;" onclick="cambiarMesArca(1)">▶</button>
+                    </div>
+                </div>
+
+                <p style="font-size:13px; color:#475569;">La idea es que lo que comprás a distribuidores/repuestos quede parejo con lo que facturás hacia afuera. Ajustá el % si querés dejarte margen de diferencia.</p>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+                    <label style="font-size:12px; font-weight:bold; color:#475569;">Destinar como máximo a compras el</label>
+                    <input type="number" id="arcaPorcentajeObjetivo" value="100" min="1" max="100" style="width:70px; padding:6px; border:1px solid #cbd5e1; border-radius:4px;" onchange="renderizarBalanceArca()">
+                    <label style="font-size:12px; font-weight:bold; color:#475569;">% de lo facturado</label>
+                </div>
+
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:12px;">
+                    <div class="card-indicador total"><label>🏛️ Facturado ARCA (mes)</label><div class="monto" id="arcaFacturadoMes">$0</div></div>
+                    <div class="card-indicador tarjeta"><label>🧾 Comprado a Distribuidores (mes)</label><div class="monto" id="arcaCompradoMes">$0</div></div>
+                    <div class="card-indicador deuda"><label>⚖️ Margen Disponible este mes</label><div class="monto" id="arcaMargenMes">$0</div></div>
+                </div>
+
+                <hr style="border:none; border-top:1px solid #a7f3d0; margin:20px 0;">
+
+                <h4 style="margin:0 0 10px 0; color:#047857;">📈 Acumulado histórico (todo lo cargado)</h4>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:12px;">
+                    <div class="card-indicador total"><label>🏛️ Facturado ARCA (total)</label><div class="monto" id="arcaFacturadoTotal">$0</div></div>
+                    <div class="card-indicador tarjeta"><label>🧾 Comprado a Distribuidores (total)</label><div class="monto" id="arcaCompradoTotal">$0</div></div>
+                    <div class="card-indicador deuda"><label>⚖️ Margen Disponible acumulado</label><div class="monto" id="arcaMargenTotal">$0</div></div>
+                </div>
             </div>
         </div>
 
@@ -375,7 +464,12 @@
         let listaArchivosEnCola = [];
         let listaDeudoresCentral = [];
         let listaProveedoresCentral = [];
+        let listaFacturacionArcaCentral = [];
         let currentKeyIndex = 0;
+
+        // --- Estado del balance Facturación ARCA vs Compras ---
+        let mesArcaActual = new Date().getMonth();
+        let anioArcaActual = new Date().getFullYear();
 
         // --- Estado del Calendario ---
         let mesCalendarioActual = new Date().getMonth();
@@ -393,6 +487,7 @@
             itemsCajaDelDia = JSON.parse(localStorage.getItem('db_caja_diaria')) || [];
             listaDeudoresCentral = JSON.parse(localStorage.getItem('db_deudores')) || [];
             listaProveedoresCentral = JSON.parse(localStorage.getItem('db_proveedores')) || [];
+            listaFacturacionArcaCentral = JSON.parse(localStorage.getItem('db_facturacion_arca')) || [];
 
             // Normaliza registros viejos (de antes de existir el sistema de pagos por fecha) para que no rompan nada
             itemsCajaDelDia.forEach(item => {
@@ -409,6 +504,8 @@
 
             actualizarVistaDeudores();
             renderizarTablaProveedores();
+            renderizarTablaArca();
+            document.getElementById('arcaFechaInput').value = fechaTrabajoActual;
             asegurarFilaDelDia();
             renderizarTablaCaja();
             inicializarCalendario();
@@ -426,6 +523,7 @@
             boton.classList.add('activo');
             if(tabId === 'cajaDiariaTab') document.getElementById('cajaMontoInput').focus();
             if(tabId === 'calendarioTab') renderizarCalendario();
+            if(tabId === 'facturacionArcaTab') renderizarBalanceArca();
         }
 
         function mostrarPreviewsLote() {
@@ -694,6 +792,128 @@
 
         function eliminarProveedor(id) { listaProveedoresCentral = listaProveedoresCentral.filter(p => p.id !== id); renderizarTablaProveedores(); }
 
+        // ==================================================================
+        // ==============  FACTURACIÓN ARCA (AFIP) - VENTAS  ===============
+        // ==================================================================
+
+        function asentarFacturacionArcaManual() {
+            const fecha = (document.getElementById('arcaFechaInput').value || '').trim() || fechaTrabajoActual || obtenerFechaDeHoy();
+            const tipo = document.getElementById('arcaTipoInput').value;
+            const cliente = document.getElementById('arcaClienteInput').value.trim() || 'CONSUMIDOR FINAL';
+            const monto = parseFloat(document.getElementById('arcaMontoInput').value);
+
+            if(!parsearFecha(fecha)) return alert("La fecha no es válida. Usá el formato DD-MM-YYYY.");
+            if(isNaN(monto) || monto <= 0) return alert("Ingresá un monto válido.");
+
+            listaFacturacionArcaCentral.push({ id: Date.now() + Math.random(), fecha, tipo, comprobante: 'S/N', cliente: cliente.toUpperCase(), monto });
+
+            document.getElementById('arcaMontoInput').value = '';
+            document.getElementById('arcaClienteInput').value = '';
+            renderizarTablaArca();
+            document.getElementById('arcaMontoInput').focus();
+        }
+
+        function agregarFilaVaciaArca() {
+            listaFacturacionArcaCentral.push({ id: Date.now() + Math.random(), fecha: fechaTrabajoActual || obtenerFechaDeHoy(), tipo: 'FACTURA B', comprobante: 'S/N', cliente: 'CONSUMIDOR FINAL', monto: 0 });
+            renderizarTablaArca();
+        }
+
+        function actualizarCampoArca(id, campo, valor) {
+            const item = listaFacturacionArcaCentral.find(a => a.id === id);
+            if(item) {
+                item[campo] = campo === 'monto' ? (parseFloat(valor) || 0) : valor;
+                localStorage.setItem('db_facturacion_arca', JSON.stringify(listaFacturacionArcaCentral));
+                renderizarBalanceArca();
+            }
+        }
+
+        function eliminarFilaArca(id) { listaFacturacionArcaCentral = listaFacturacionArcaCentral.filter(a => a.id !== id); renderizarTablaArca(); }
+
+        function renderizarTablaArca() {
+            const tbody = document.getElementById('cuerpoTablaArca');
+            tbody.innerHTML = '';
+            if(listaFacturacionArcaCentral.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:15px;">Todavía no cargaste ninguna factura de venta (ARCA/AFIP).</td></tr>`;
+            }
+            listaFacturacionArcaCentral.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="text" class="table-input" value="${a.fecha}" onchange="actualizarCampoArca(${a.id}, 'fecha', this.value)"></td>
+                    <td>
+                        <select class="table-select" onchange="actualizarCampoArca(${a.id}, 'tipo', this.value)">
+                            <option value="FACTURA A" ${a.tipo==='FACTURA A'?'selected':''}>Factura A</option>
+                            <option value="FACTURA B" ${a.tipo==='FACTURA B'?'selected':''}>Factura B</option>
+                            <option value="FACTURA C" ${a.tipo==='FACTURA C'?'selected':''}>Factura C</option>
+                            <option value="NOTA DE CREDITO" ${a.tipo==='NOTA DE CREDITO'?'selected':''}>Nota de Crédito</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="table-input" value="${a.comprobante || 'S/N'}" onchange="actualizarCampoArca(${a.id}, 'comprobante', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${a.cliente || ''}" onchange="actualizarCampoArca(${a.id}, 'cliente', this.value)"></td>
+                    <td><input type="number" class="table-input" value="${a.monto}" style="font-weight:bold;" onchange="actualizarCampoArca(${a.id}, 'monto', this.value)"></td>
+                    <td style="text-align:center;"><button class="btn-eliminar" onclick="eliminarFilaArca(${a.id})">❌</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            localStorage.setItem('db_facturacion_arca', JSON.stringify(listaFacturacionArcaCentral));
+            renderizarBalanceArca();
+        }
+
+        function cambiarMesArca(delta) {
+            mesArcaActual += delta;
+            if(mesArcaActual > 11) { mesArcaActual = 0; anioArcaActual++; }
+            if(mesArcaActual < 0) { mesArcaActual = 11; anioArcaActual--; }
+            renderizarBalanceArca();
+        }
+
+        // Compara lo facturado (ARCA) contra lo comprado a proveedores/distribuidores (Facturas + Remitos),
+        // tanto del mes elegido como acumulado histórico, y calcula cuánto margen queda para seguir comprando repuestos.
+        function renderizarBalanceArca() {
+            const tituloMes = document.getElementById('tituloMesArca');
+            if(!tituloMes) return; // la pestaña todavía no se renderizó en el DOM
+            tituloMes.innerText = `${NOMBRES_MESES[mesArcaActual]} ${anioArcaActual}`;
+
+            const pct = Math.min(100, Math.max(1, parseFloat(document.getElementById('arcaPorcentajeObjetivo').value) || 100));
+
+            let facturadoMes = 0, compradoMes = 0, facturadoTotal = 0, compradoTotal = 0;
+
+            listaFacturacionArcaCentral.forEach(a => {
+                const m = parseFloat(a.monto) || 0;
+                facturadoTotal += m;
+                const f = parsearFecha(a.fecha);
+                if(f && f.getMonth() === mesArcaActual && f.getFullYear() === anioArcaActual) facturadoMes += m;
+            });
+
+            listaProveedoresCentral.forEach(p => {
+                const m = parseFloat(p.monto) || 0;
+                compradoTotal += m;
+                const f = parsearFecha(p.fecha);
+                if(f && f.getMonth() === mesArcaActual && f.getFullYear() === anioArcaActual) compradoMes += m;
+            });
+
+            const margenMes = (facturadoMes * pct / 100) - compradoMes;
+            const margenTotal = (facturadoTotal * pct / 100) - compradoTotal;
+
+            document.getElementById('arcaFacturadoMes').innerText = `$${facturadoMes.toLocaleString('es-AR')}`;
+            document.getElementById('arcaCompradoMes').innerText = `$${compradoMes.toLocaleString('es-AR')}`;
+            const elMargenMes = document.getElementById('arcaMargenMes');
+            elMargenMes.innerText = `$${margenMes.toLocaleString('es-AR')}`;
+            elMargenMes.style.color = margenMes >= 0 ? 'var(--verde-exito)' : 'var(--rojo-alerta)';
+
+            document.getElementById('arcaFacturadoTotal').innerText = `$${facturadoTotal.toLocaleString('es-AR')}`;
+            document.getElementById('arcaCompradoTotal').innerText = `$${compradoTotal.toLocaleString('es-AR')}`;
+            const elMargenTotal = document.getElementById('arcaMargenTotal');
+            elMargenTotal.innerText = `$${margenTotal.toLocaleString('es-AR')}`;
+            elMargenTotal.style.color = margenTotal >= 0 ? 'var(--verde-exito)' : 'var(--rojo-alerta)';
+        }
+
+        function exportarFacturacionArcaExcel() {
+            if(listaFacturacionArcaCentral.length === 0) return alert("No hay facturas de venta cargadas para exportar.");
+            const filas = listaFacturacionArcaCentral.map(a => ({ "Fecha": a.fecha, "Tipo": a.tipo, "Comprobante": a.comprobante, "Cliente": a.cliente, "Monto Total": a.monto }));
+            const libro = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(filas), "Facturacion ARCA");
+            XLSX.writeFile(libro, `Facturacion_ARCA_${obtenerFechaDeHoy()}.xlsx`);
+        }
+
         // Función auxiliar para calcular días de antigüedad 
         function calcularDiasAntiguedad(fechaStr) {
             if(!fechaStr) return 0;
@@ -906,6 +1126,12 @@
                 Devolvé estrictamente JSON: [{"fecha": "DD-MM-YYYY", "proveedor": "NOMBRE", "tipo": "FACTURA"|"REMITO", "comprobante": "NRO", "cuit": "CUIT", "iva": 0, "monto": 78500}]
             `;
 
+            const promptArcaV1 = `
+                Analizá esta factura de venta propia emitida por el negocio (comprobante ARCA/AFIP: Factura A, B o C, o Nota de Crédito).
+                Extraé: fecha, tipo de comprobante ("FACTURA A"|"FACTURA B"|"FACTURA C"|"NOTA DE CREDITO"), número de comprobante, nombre del cliente (si no figura, usá "CONSUMIDOR FINAL") y el monto TOTAL de la factura.
+                Devolvé estrictamente JSON: [{"fecha": "DD-MM-YYYY", "tipo": "FACTURA A"|"FACTURA B"|"FACTURA C"|"NOTA DE CREDITO", "comprobante": "NRO", "cliente": "NOMBRE", "monto": 45000}]
+            `;
+
             for (let i = 0; i < listaArchivosEnCola.length; i++) {
                 const archivo = listaArchivosEnCola[i];
                 document.getElementById(`estado_archivo_${i}`).innerText = "⚡ Analizando...";
@@ -926,7 +1152,7 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                contents: [{ parts: [{ text: tipoLote === 'CAJA' ? promptCajaV10 : promptProveedoresV12 }, { inlineData: { mimeType: archivo.type, data: contenidoBase64 } }] }],
+                                contents: [{ parts: [{ text: tipoLote === 'CAJA' ? promptCajaV10 : (tipoLote === 'ARCA' ? promptArcaV1 : promptProveedoresV12) }, { inlineData: { mimeType: archivo.type, data: contenidoBase64 } }] }],
                                 generationConfig: { responseMimeType: "application/json" }
                             })
                         });
@@ -943,6 +1169,8 @@
                         datosMapeados.forEach(item => {
                             if(tipoLote === 'CAJA') {
                                 itemsCajaDelDia.push({ id: Date.now() + Math.random(), fecha: item.fecha || fechaTrabajoActual || obtenerFechaDeHoy(), detalle: (item.detalle || 'VENTA').toUpperCase(), monto: parseFloat(item.monto) || 0, condicion: (item.condicion || 'P').toUpperCase(), deudor: (item.deudor || '').toUpperCase(), montoPagado: 0, pagada: false, pagos: [] });
+                            } else if(tipoLote === 'ARCA') {
+                                listaFacturacionArcaCentral.push({ id: Date.now() + Math.random(), fecha: item.fecha || fechaTrabajoActual || obtenerFechaDeHoy(), tipo: (item.tipo || 'FACTURA B').toUpperCase(), comprobante: (item.comprobante || 'S/N').toUpperCase(), cliente: (item.cliente || 'CONSUMIDOR FINAL').toUpperCase(), monto: parseFloat(item.monto) || 0 });
                             } else {
                                 listaProveedoresCentral.push({ id: Date.now() + Math.random(), fecha: item.fecha || obtenerFechaDeHoy(), proveedor: (item.proveedor || 'DESCONOCIDO').toUpperCase(), tipo: (item.tipo || 'FACTURA').toUpperCase(), comprobante: (item.comprobante || 'S/N').toUpperCase(), cuit: item.cuit || 'S/N', iva: parseFloat(item.iva) || 0, monto: parseFloat(item.monto) || 0 });
                             }
@@ -955,7 +1183,8 @@
                     }
                 }
             }
-            if(tipoLote === 'CAJA') { renderizarTablaCaja(); cambiarTab('cajaDiariaTab', document.getElementById('btnTabCaja')); } 
+            if(tipoLote === 'CAJA') { renderizarTablaCaja(); cambiarTab('cajaDiariaTab', document.getElementById('btnTabCaja')); }
+            else if(tipoLote === 'ARCA') { renderizarTablaArca(); cambiarTab('facturacionArcaTab', document.getElementById('btnTabArca')); }
             else { renderizarTablaProveedores(); cambiarTab('proveedoresTab', document.getElementById('btnTabProveedores')); }
             listaArchivosEnCola = []; spinner.style.display = 'none'; txtEstado.innerText = "🎉 ¡Escaneo finalizado!";
         }
@@ -998,7 +1227,7 @@
         }
 
         function exportarBackupJSON() {
-            const stringData = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ itemsCajaDelDia, listaDeudoresCentral, listaProveedoresCentral, apiKeys: document.getElementById('apiKeyInput').value.trim() }));
+            const stringData = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ itemsCajaDelDia, listaDeudoresCentral, listaProveedoresCentral, listaFacturacionArcaCentral, apiKeys: document.getElementById('apiKeyInput').value.trim() }));
             const d = document.createElement('a'); d.setAttribute("href", stringData); d.setAttribute("download", `Backup_Comercial_${obtenerFechaDeHoy()}.json`);
             document.body.appendChild(d); d.click(); d.remove();
         }
@@ -1012,14 +1241,17 @@
                     const datos = JSON.parse(e.target.result);
                     if (datos.itemsCajaDelDia && datos.listaDeudoresCentral && datos.listaProveedoresCentral) {
                         const sumar = confirm("¿Deseas ANEXAR Y SUMAR los datos del archivo a las tablas actuales? \n\n✅ [Aceptar] = Acumula los datos\n❌ [Cancelar] = Borra lo de hoy y restaura la copia exacta");
+                        const arcaDelArchivo = datos.listaFacturacionArcaCentral || [];
                         if(sumar) {
                             itemsCajaDelDia = itemsCajaDelDia.concat(datos.itemsCajaDelDia);
                             listaDeudoresCentral = listaDeudoresCentral.concat(datos.listaDeudoresCentral);
                             listaProveedoresCentral = listaProveedoresCentral.concat(datos.listaProveedoresCentral);
+                            listaFacturacionArcaCentral = listaFacturacionArcaCentral.concat(arcaDelArchivo);
                         } else {
                             itemsCajaDelDia = datos.itemsCajaDelDia;
                             listaDeudoresCentral = datos.listaDeudoresCentral;
                             listaProveedoresCentral = datos.listaProveedoresCentral;
+                            listaFacturacionArcaCentral = arcaDelArchivo;
                         }
 
                         if(datos.apiKeys && document.getElementById('apiKeyInput').value.trim() === '') {
@@ -1027,7 +1259,7 @@
                             localStorage.setItem('gemini_api_keys_v2', datos.apiKeys);
                         }
                         
-                        renderizarTablaCaja(); actualizarVistaDeudores(); renderizarTablaProveedores();
+                        renderizarTablaCaja(); actualizarVistaDeudores(); renderizarTablaProveedores(); renderizarTablaArca();
                         alert("¡Archivos cargados al sistema con éxito!");
                     } else alert("Estructura de archivo inválida.");
                 } catch(err) { alert("Error al leer el archivo: " + err.message); }
