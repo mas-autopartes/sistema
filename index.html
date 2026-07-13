@@ -63,6 +63,7 @@
         th { background: #f1f5f9; padding: 12px; font-weight: bold; color: #475569; }
         td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
         tr.fila-deuda { background-color: var(--amarillo-deuda); }
+        tr.fila-egreso { background-color: #fecaca; }
         tr.fila-alerta-critica { background-color: #fecaca; }
         
         input.table-input, select.table-select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; font-size: 13px; font-weight: 500; }
@@ -106,8 +107,9 @@
         </header>
 
         <div class="panel-respaldo">
-            <div>
+            <div style="display:flex; align-items:center; gap:10px;">
                 💾 <b>Protección del Historial y Reportes Mensuales:</b>
+                <input type="text" id="nombreNegocioInput" placeholder="Nombre de tu negocio (para recibos)" onchange="localStorage.setItem('db_nombre_negocio', this.value)" style="padding:5px 8px; border-radius:5px; border:1px solid #a7f3d0; font-size:12px; width:220px;">
             </div>
             <div style="display: flex; gap: 8px;">
                 <button class="btn-accion btn-exito" style="padding:6px 12px; font-size:13px;" onclick="exportarBackupJSON()">📥 Descargar Respaldo Total (.json)</button>
@@ -120,8 +122,22 @@
             </div>
         </div>
 
+        <div id="bannerVinculacion" class="panel-respaldo" style="background:#eef2ff; border-color:#c7d2fe;">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                🔗 <b>Sincronizar entre dispositivos:</b>
+                <span id="badgeVinculacion" style="font-size:12px; color:#64748b;">⚪ Sin vincular (los datos quedan solo en este navegador)</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-accion" style="padding:6px 12px; font-size:12px; background:#4f46e5; color:white;" onclick="crearArchivoVinculado()">🆕 Crear archivo vinculado</button>
+                <button class="btn-accion" style="padding:6px 12px; font-size:12px; background:#e2e8f0;" onclick="abrirArchivoVinculadoExistente()">📂 Vincular archivo existente</button>
+            </div>
+        </div>
+
+        <div id="bannerRecordatorioBackup" style="display:none;"></div>
+
         <div class="tabs">
-            <button id="btnTabCaja" class="tab-btn activo" onclick="cambiarTab('cajaDiariaTab', this)">📖 Caja Diaria</button>
+            <button id="btnTabInicio" class="tab-btn activo" onclick="cambiarTab('inicioTab', this)">🏠 Inicio</button>
+            <button id="btnTabCaja" class="tab-btn" onclick="cambiarTab('cajaDiariaTab', this)">📖 Caja Diaria</button>
             <button id="btnTabProveedores" class="tab-btn" onclick="cambiarTab('proveedoresTab', this)">🧾 Facturas y Remitos (Compras)</button>
             <button id="btnTabArca" class="tab-btn" onclick="cambiarTab('facturacionArcaTab', this)" style="background: #ecfdf5; color: #047857;">🏛️ Facturación ARCA (Ventas)</button>
             <button id="btnTabDeudores" class="tab-btn" onclick="cambiarTab('deudoresTab', this)">🔴 Historial de Fiados Activos</button>
@@ -146,16 +162,54 @@
             <div id="mensajeEstado" style="font-size:14px; font-weight:bold; margin-top:12px; display:none;"></div>
         </div>
 
-        <div id="cajaDiariaTab" class="seccion-tab activo">
+        <div id="inicioTab" class="seccion-tab activo">
+            <div id="bannerAlertaDia" style="display:none;"></div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:14px; margin-bottom:22px;">
+                <div class="card-indicador efectivo"><label>💵 Efectivo Neto (hoy trabajado)</label><div class="monto" id="dashEfectivo">$0</div></div>
+                <div class="card-indicador transf"><label>📱+💳 MP/Transf + Tarjeta</label><div class="monto" id="dashElectronico">$0</div></div>
+                <div class="card-indicador deuda"><label>⚠️ Fiados Generados Hoy</label><div class="monto" id="dashFiados">$0</div></div>
+                <div class="card-indicador" style="border-left-color:#dc2626;"><label>🔴 Total Pendiente de Cobro</label><div class="monto" id="dashDeudaTotal" style="color:#dc2626;">$0</div></div>
+            </div>
+
+            <div class="contenedor-tabla" style="margin-bottom:20px;">
+                <h3 style="margin-top:0;">🔴 Deudas críticas (+15 días o +$300.000)</h3>
+                <div id="dashDeudasCriticas" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+
+            <div class="contenedor-tabla" style="background:#f0fdf4; border:2px solid #6ee7b7; margin-bottom:20px;">
+                <h3 style="margin-top:0; color:#047857;">⚖️ Facturación ARCA vs Compras (mes actual)</h3>
+                <div id="dashResumenArca" style="font-size:15px; font-weight:bold; text-align:center; padding:10px;"></div>
+            </div>
+
+            <div class="contenedor-tabla">
+                <h3 style="margin-top:0;">🚀 Accesos rápidos</h3>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-accion btn-principal" onclick="cambiarTab('cajaDiariaTab', document.getElementById('btnTabCaja'))">📖 Caja Diaria</button>
+                    <button class="btn-accion" style="background:#e2e8f0;" onclick="cambiarTab('calendarioTab', document.getElementById('btnTabCalendario'))">📅 Calendario</button>
+                    <button class="btn-accion" style="background:#fee2e2; color:#b91c1c;" onclick="cambiarTab('deudoresTab', document.getElementById('btnTabDeudores'))">🔴 Deudores</button>
+                    <button class="btn-accion" style="background:#ecfdf5; color:#047857;" onclick="cambiarTab('facturacionArcaTab', document.getElementById('btnTabArca'))">🏛️ Facturación ARCA</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="cajaDiariaTab" class="seccion-tab">
             <div class="grid-indicadores">
-                <div class="card-indicador efectivo"><label>💵 Efectivo Físico</label><div class="monto" id="indEfectivo">$0</div></div>
+                <div class="card-indicador efectivo"><label>💵 Efectivo Físico (Neto)</label><div class="monto" id="indEfectivo">$0</div></div>
                 <div class="card-indicador transf"><label>📱 MercadoPago / Transf.</label><div class="monto" id="indTransf">$0</div></div>
                 <div class="card-indicador tarjeta"><label>💳 Tarjetas Debito/Crédito</label><div class="monto" id="indTarjeta">$0</div></div>
                 <div class="card-indicador deuda"><label>⚠️ Fiados Generados Hoy</label><div class="monto" id="indDeuda">$0</div></div>
+                <div class="card-indicador" style="border-left-color:#dc2626;"><label>🔴 Egresos del Día</label><div class="monto" id="indEgresos" style="color:#dc2626;">$0</div></div>
                 <div class="card-indicador total"><label>💰 TOTAL ENTRADA REAL (Sin Fiados)</label><div class="monto" id="indTotalReal" style="color:var(--azul-premium);">$0</div></div>
             </div>
 
             <div class="contenedor-tabla" style="margin-bottom: 25px; border: 2px solid var(--azul-glow); background: #fdfdfd;">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; background:#fffbeb; border:1px solid #fde68a; padding:12px 16px; border-radius:8px; flex-wrap:wrap;">
+                    <label style="font-weight:bold; color:#92400e; font-size:14px;">📅 ¿Para qué día es esta carga?</label>
+                    <input type="date" id="cajaFechaTrabajoNativo" onchange="cambiarFechaTrabajoDesdeInputNativo(this.value)" style="padding:7px 10px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold; font-size:14px;">
+                    <button class="btn-accion" style="background:#e2e8f0; font-size:12px; padding:6px 10px;" onclick="irAHoyCajaDiaria()">Hoy</button>
+                    <span style="font-size:12px; color:#92400e;">↳ Se repite sola en cada venta que cargues hasta que cambies la fecha de nuevo. Ideal si un día cargás varios días atrasados (ej. lunes cargás viernes y sábado).</span>
+                </div>
                 <h3 style="margin-top: 0; color: var(--azul-premium); font-size: 15px;">💵 Panel de Carga Manual Rápida</h3>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
                     <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 150px;">
@@ -169,10 +223,11 @@
                             <option value="MP">📱 MercadoPago (MP)</option>
                             <option value="T">💳 Tarjeta (T)</option>
                             <option value="DEBE">⚠️ DEBE (Fiado)</option>
+                            <option value="EGRESO">🔴 EGRESO (Gasto/Salida de efectivo)</option>
                         </select>
                     </div>
                     <div id="wrapperCajaDeudor" style="display: flex; flex-direction: column; gap: 4px; flex: 2; min-width: 220px; transition: all 0.2s; opacity: 0.5;">
-                        <label style="font-size: 11px; font-weight: bold; color: #475569;">CLIENTE DEUDOR</label>
+                        <label id="labelCajaDeudor" style="font-size: 11px; font-weight: bold; color: #475569;">CLIENTE DEUDOR</label>
                         <input type="text" id="cajaDeudorInput" class="table-input" placeholder="Quién debe..." disabled autocomplete="off" style="height: 38px;" list="listaDeudoresFrecuentes">
                         <datalist id="listaDeudoresFrecuentes"></datalist>
                     </div>
@@ -307,6 +362,16 @@
                     <label style="font-size:12px; font-weight:bold; color:#475569;">% de lo facturado</label>
                 </div>
 
+                <div id="arcaEstadoBanner" style="text-align:center; padding:16px; border-radius:10px; margin-bottom:14px; font-size:18px; font-weight:bold;"></div>
+
+                <div style="background:#e2e8f0; border-radius:20px; height:26px; overflow:hidden; margin-bottom:6px; position:relative;">
+                    <div id="arcaBarraProgreso" style="height:100%; width:0%; transition:width 0.3s; display:flex; align-items:center; justify-content:flex-end; padding-right:8px; box-sizing:border-box;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:#64748b; margin-bottom:20px;">
+                    <span>$0 comprado</span>
+                    <span id="arcaBarraTope">Tope de compras del mes</span>
+                </div>
+
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:12px;">
                     <div class="card-indicador total"><label>🏛️ Facturado ARCA (mes)</label><div class="monto" id="arcaFacturadoMes">$0</div></div>
                     <div class="card-indicador tarjeta"><label>🧾 Comprado a Distribuidores (mes)</label><div class="monto" id="arcaCompradoMes">$0</div></div>
@@ -335,9 +400,9 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 20%;">Fechas (Antigüedad)</th>
-                            <th style="width: 35%;">Nombre del Cliente</th>
-                            <th style="width: 15%;">Estado Financiero</th>
+                            <th style="width: 22%;">Nombre del Cliente</th>
+                            <th style="width: 33%;">Qué se llevó (detalle)</th>
+                            <th style="width: 15%;">Antigüedad</th>
                             <th style="width: 15%;">Deuda Total ($)</th>
                             <th style="width: 15%;">Acción de Cobro</th>
                         </tr>
@@ -354,13 +419,14 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 15%;">Fecha Deuda</th>
-                            <th style="width: 25%;">Cliente</th>
-                            <th style="width: 13%;">Monto Original</th>
-                            <th style="width: 13%;">Pagado</th>
-                            <th style="width: 15%;">Fecha de Pago</th>
-                            <th style="width: 12%;">Medio</th>
-                            <th style="width: 7%;">Estado</th>
+                            <th style="width: 11%;">Fecha Deuda</th>
+                            <th style="width: 18%;">Cliente</th>
+                            <th style="width: 22%;">Qué se llevó</th>
+                            <th style="width: 11%;">Monto Original</th>
+                            <th style="width: 11%;">Pagado</th>
+                            <th style="width: 12%;">Fecha de Pago</th>
+                            <th style="width: 10%;">Medio</th>
+                            <th style="width: 5%;">Estado</th>
                         </tr>
                     </thead>
                     <tbody id="cuerpoTablaHistorialPagos"></tbody>
@@ -380,6 +446,11 @@
                     <button class="btn-accion" style="background:#8b5cf6; color:white;" onclick="exportarCierreMensual()">📦 Cerrar Mes y Exportar Balance (Facturas + Remitos)</button>
                 </div>
                 <div id="gridCalendario" style="display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; margin-top:18px;"></div>
+            </div>
+
+            <div class="contenedor-tabla" style="margin-bottom:20px;">
+                <h3 style="margin-top:0;">📈 Evolución de Ventas del Mes (día a día)</h3>
+                <div id="graficoEvolucionMensual"></div>
             </div>
 
             <div class="contenedor-tabla" id="panelDetalleDia" style="display:none;">
@@ -459,6 +530,19 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="modalRecibo">
+        <div class="modal-caja">
+            <h3 style="color:var(--verde-exito);">✅ Pago Registrado</h3>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 10px;">Podés mandarle el comprobante al cliente por WhatsApp.</p>
+            <textarea id="textoReciboPreview" readonly style="width:100%; min-height:110px; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
+            <div style="display:flex; gap:10px; justify-content:center; margin-top: 14px; flex-wrap:wrap;">
+                <button class="btn-accion" style="background:#cbd5e1; color:#0f172a;" onclick="document.getElementById('modalRecibo').style.display='none'">Cerrar</button>
+                <button class="btn-accion" style="background:#e2e8f0;" onclick="copiarTextoRecibo()">📋 Copiar Texto</button>
+                <button class="btn-accion" style="background:#25D366; color:white;" onclick="enviarReciboPorWhatsapp()">📲 Enviar por WhatsApp</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let itemsCajaDelDia = [];
         let listaArchivosEnCola = [];
@@ -480,9 +564,16 @@
         // --- Día que se está trabajando actualmente en la pestaña "Caja Diaria" ---
         let fechaTrabajoActual = null;
 
+        // --- Archivo vinculado para sincronizar entre dispositivos (File System Access API) ---
+        let handleArchivoVinculado = null;
+        let handleArchivoVinculadoPendiente = null;
+
         window.onload = function() {
             if(localStorage.getItem('gemini_api_keys_v2')) {
                 document.getElementById('apiKeyInput').value = localStorage.getItem('gemini_api_keys_v2');
+            }
+            if(localStorage.getItem('db_nombre_negocio')) {
+                document.getElementById('nombreNegocioInput').value = localStorage.getItem('db_nombre_negocio');
             }
             itemsCajaDelDia = JSON.parse(localStorage.getItem('db_caja_diaria')) || [];
             listaDeudoresCentral = JSON.parse(localStorage.getItem('db_deudores')) || [];
@@ -509,10 +600,12 @@
             asegurarFilaDelDia();
             renderizarTablaCaja();
             inicializarCalendario();
+            renderizarDashboard();
+            verificarRecordatorioBackup();
+            intentarReconectarHandleGuardado();
 
             document.getElementById('cajaMontoInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); asentarCajaManualRapido(); }});
             document.getElementById('cajaDeudorInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); asentarCajaManualRapido(); }});
-            document.getElementById('cajaMontoInput').focus();
         };
 
         function guardarApiKeys() { localStorage.setItem('gemini_api_keys_v2', document.getElementById('apiKeyInput').value.trim()); }
@@ -524,6 +617,7 @@
             if(tabId === 'cajaDiariaTab') document.getElementById('cajaMontoInput').focus();
             if(tabId === 'calendarioTab') renderizarCalendario();
             if(tabId === 'facturacionArcaTab') renderizarBalanceArca();
+            if(tabId === 'inicioTab') renderizarDashboard();
         }
 
         function mostrarPreviewsLote() {
@@ -562,15 +656,26 @@
             const cond = document.getElementById('cajaCondicionInput').value;
             const wrapper = document.getElementById('wrapperCajaDeudor');
             const deudorInput = document.getElementById('cajaDeudorInput');
+            const label = document.getElementById('labelCajaDeudor');
             if (cond === 'DEBE') {
                 wrapper.style.opacity = '1';
                 deudorInput.disabled = false;
                 deudorInput.style.backgroundColor = 'var(--amarillo-deuda)';
+                label.innerText = 'CLIENTE DEUDOR';
+                deudorInput.placeholder = 'Quién debe...';
+            } else if (cond === 'EGRESO') {
+                wrapper.style.opacity = '1';
+                deudorInput.disabled = false;
+                deudorInput.style.backgroundColor = '#fecaca';
+                label.innerText = 'MOTIVO DEL EGRESO';
+                deudorInput.placeholder = 'Ej: Librería, pago a Proveedor X...';
             } else {
                 wrapper.style.opacity = '0.5';
                 deudorInput.disabled = true;
                 deudorInput.style.backgroundColor = '#e2e8f0';
                 deudorInput.value = '';
+                label.innerText = 'CLIENTE DEUDOR';
+                deudorInput.placeholder = 'Quién debe...';
             }
         }
 
@@ -584,13 +689,15 @@
 
             if (isNaN(mon) || mon <= 0) return alert("Por favor, ingresá un monto válido.");
             if (cond === 'DEBE' && !deu) return alert("Para asentar un fiado, tenés que escribir o elegir el deudor.");
+            if (cond === 'EGRESO' && !deu) return alert("Para asentar un egreso, contá brevemente el motivo (ej: 'Librería', 'Pago a Proveedor X').");
 
             // Si hay un renglón placeholder vacío para el día que se está trabajando, lo saca antes de asentar el real
             itemsCajaDelDia = itemsCajaDelDia.filter(i => !(i.fecha === (fechaTrabajoActual || obtenerFechaDeHoy()) && i.monto === "" && i.detalle === "VENTA" && i.condicion === "P" && !i.deudor));
 
-            itemsCajaDelDia.push({ id: Date.now() + Math.random(), fecha: fechaTrabajoActual || obtenerFechaDeHoy(), detalle: "VENTA", monto: mon, condicion: cond, deudor: cond === 'DEBE' ? deu.toUpperCase() : "", montoPagado: 0, pagada: false, pagos: [] });
+            const detalleFinal = cond === 'EGRESO' ? `EGRESO: ${deu.toUpperCase()}` : "VENTA";
+            itemsCajaDelDia.push({ id: Date.now() + Math.random(), fecha: fechaTrabajoActual || obtenerFechaDeHoy(), detalle: detalleFinal, monto: mon, condicion: cond, deudor: cond === 'DEBE' ? deu.toUpperCase() : "", montoPagado: 0, pagada: false, pagos: [] });
             
-            // LÓGICA DE MEMORIA: Solo se borra el deudor si NO es una cuenta al DEBE
+            // LÓGICA DE MEMORIA: Solo se borra el deudor/motivo si NO es una cuenta al DEBE
             monInput.value = ""; 
             if(cond !== 'DEBE') {
                 deuInput.value = "";
@@ -616,7 +723,7 @@
             if(item) {
                 item[campo] = campo === 'monto' ? (parseFloat(valor) || 0) : valor;
                 if(campo === 'condicion' || campo === 'deudor') renderizarTablaCaja();
-                else { calcularTotalesCaja(); localStorage.setItem('db_caja_diaria', JSON.stringify(itemsCajaDelDia)); }
+                else { calcularTotalesCaja(); localStorage.setItem('db_caja_diaria', JSON.stringify(itemsCajaDelDia)); escribirArchivoVinculado(); }
             }
         }
 
@@ -624,6 +731,7 @@
             const tbody = document.getElementById('cuerpoTablaCaja');
             const titulo = document.getElementById('tituloDiaTrabajoCaja');
             if(titulo) titulo.innerText = fechaTrabajoActual;
+            actualizarInputNativoFecha();
             tbody.innerHTML = '';
 
             const itemsDelDia = itemsCajaDelDia.filter(i => i.fecha === fechaTrabajoActual);
@@ -634,6 +742,7 @@
             itemsDelDia.forEach(item => {
                 const tr = document.createElement('tr');
                 if(item.condicion === 'DEBE') tr.className = 'fila-deuda';
+                if(item.condicion === 'EGRESO') tr.className = 'fila-egreso';
                 tr.innerHTML = `
                     <td><input type="text" class="table-input" value="${item.fecha}" onchange="actualizarCampoCaja(${item.id}, 'fecha', this.value)"></td>
                     <td><input type="text" class="table-input" value="${item.detalle}" onchange="actualizarCampoCaja(${item.id}, 'detalle', this.value)"></td>
@@ -644,6 +753,7 @@
                             <option value="MP" ${item.condicion==='MP'?'selected':''}>📱 MercadoPago (MP)</option>
                             <option value="T" ${item.condicion==='T'?'selected':''}>💳 Tarjeta (T)</option>
                             <option value="DEBE" ${item.condicion==='DEBE'?'selected':''}>⚠️ DEBE (Fiado)</option>
+                            <option value="EGRESO" ${item.condicion==='EGRESO'?'selected':''}>🔴 EGRESO</option>
                         </select>
                     </td>
                     <td><input type="text" class="table-input" value="${item.deudor}" placeholder="Nombre..." list="listaDeudoresFrecuentes" onchange="actualizarCampoCaja(${item.id}, 'deudor', this.value)"></td>
@@ -653,7 +763,7 @@
             });
             sincronizarDeudoresAutomatico();
             calcularTotalesCaja();
-            localStorage.setItem('db_caja_diaria', JSON.stringify(itemsCajaDelDia));
+            localStorage.setItem('db_caja_diaria', JSON.stringify(itemsCajaDelDia)); escribirArchivoVinculado();
         }
 
         // Si el día de trabajo actual no tiene ningún renglón cargado, agrega uno vacío para poder empezar a tipear.
@@ -667,6 +777,24 @@
 
         function guardarFechaTrabajo() { localStorage.setItem('db_fecha_trabajo', fechaTrabajoActual); }
 
+        // Convierte fechaTrabajoActual (DD-MM-YYYY) al formato que espera el <input type="date"> (YYYY-MM-DD) y lo refleja
+        function actualizarInputNativoFecha() {
+            const input = document.getElementById('cajaFechaTrabajoNativo');
+            if(!input || !fechaTrabajoActual) return;
+            const [d, m, y] = fechaTrabajoActual.split('-');
+            input.value = `${y}-${m}-${d}`;
+        }
+
+        // Se dispara cuando el usuario elige una fecha con el selector nativo del panel de carga rápida
+        function cambiarFechaTrabajoDesdeInputNativo(valorISO) {
+            if(!valorISO) return;
+            const [y, m, d] = valorISO.split('-');
+            fechaTrabajoActual = `${d}-${m}-${y}`;
+            guardarFechaTrabajo();
+            asegurarFilaDelDia();
+            renderizarTablaCaja();
+        }
+
         // Mueve el día de trabajo hacia adelante o atrás (para corregir un día anterior, por ejemplo)
         function cambiarDiaTrabajoCaja(delta) {
             const actual = parsearFecha(fechaTrabajoActual) || new Date();
@@ -675,6 +803,7 @@
             guardarFechaTrabajo();
             asegurarFilaDelDia();
             renderizarTablaCaja();
+            actualizarInputNativoFecha();
         }
 
         function irAHoyCajaDiaria() {
@@ -682,6 +811,7 @@
             guardarFechaTrabajo();
             asegurarFilaDelDia();
             renderizarTablaCaja();
+            actualizarInputNativoFecha();
         }
 
         function sincronizarDeudoresAutomatico() {
@@ -694,7 +824,7 @@
                     }
                 }
             });
-            localStorage.setItem('db_deudores', JSON.stringify(listaDeudoresCentral));
+            localStorage.setItem('db_deudores', JSON.stringify(listaDeudoresCentral)); escribirArchivoVinculado();
             actualizarVistaDeudores();
             actualizarDatalistDeudoresFrecuentes();
         }
@@ -725,19 +855,22 @@
         }
 
         function calcularTotalesCaja() {
-            let efec = 0, transf = 0, tarj = 0, deuda = 0;
+            let efec = 0, transf = 0, tarj = 0, deuda = 0, egresos = 0;
             itemsCajaDelDia.filter(i => i.fecha === fechaTrabajoActual).forEach(i => {
                 const m = parseFloat(i.monto) || 0;
                 if(i.condicion === 'P') efec += m;
                 else if(i.condicion === 'MP') transf += m;
                 else if(i.condicion === 'T') tarj += m;
                 else if(i.condicion === 'DEBE') deuda += m;
+                else if(i.condicion === 'EGRESO') egresos += m;
             });
-            document.getElementById('indEfectivo').innerText = `$${efec.toLocaleString('es-AR')}`;
+            const efectivoNeto = efec - egresos;
+            document.getElementById('indEfectivo').innerText = `$${efectivoNeto.toLocaleString('es-AR')}`;
             document.getElementById('indTransf').innerText = `$${transf.toLocaleString('es-AR')}`;
             document.getElementById('indTarjeta').innerText = `$${tarj.toLocaleString('es-AR')}`;
             document.getElementById('indDeuda').innerText = `$${deuda.toLocaleString('es-AR')}`;
-            document.getElementById('indTotalReal').innerText = `$${(efec + transf + tarj).toLocaleString('es-AR')}`;
+            document.getElementById('indEgresos').innerText = `$${egresos.toLocaleString('es-AR')}`;
+            document.getElementById('indTotalReal').innerText = `$${(efectivoNeto + transf + tarj).toLocaleString('es-AR')}`;
             calcularBalanceComercial();
         }
 
@@ -758,7 +891,7 @@
             const item = listaProveedoresCentral.find(p => p.id === id);
             if(item) {
                 item[campo] = (campo === 'monto' || campo === 'iva') ? (parseFloat(valor) || 0) : valor;
-                localStorage.setItem('db_proveedores', JSON.stringify(listaProveedoresCentral));
+                localStorage.setItem('db_proveedores', JSON.stringify(listaProveedoresCentral)); escribirArchivoVinculado();
                 calcularBalanceComercial();
             }
         }
@@ -786,7 +919,7 @@
                 `;
                 tbody.appendChild(tr);
             });
-            localStorage.setItem('db_proveedores', JSON.stringify(listaProveedoresCentral));
+            localStorage.setItem('db_proveedores', JSON.stringify(listaProveedoresCentral)); escribirArchivoVinculado();
             calcularBalanceComercial();
         }
 
@@ -822,7 +955,7 @@
             const item = listaFacturacionArcaCentral.find(a => a.id === id);
             if(item) {
                 item[campo] = campo === 'monto' ? (parseFloat(valor) || 0) : valor;
-                localStorage.setItem('db_facturacion_arca', JSON.stringify(listaFacturacionArcaCentral));
+                localStorage.setItem('db_facturacion_arca', JSON.stringify(listaFacturacionArcaCentral)); escribirArchivoVinculado();
                 renderizarBalanceArca();
             }
         }
@@ -854,7 +987,7 @@
                 `;
                 tbody.appendChild(tr);
             });
-            localStorage.setItem('db_facturacion_arca', JSON.stringify(listaFacturacionArcaCentral));
+            localStorage.setItem('db_facturacion_arca', JSON.stringify(listaFacturacionArcaCentral)); escribirArchivoVinculado();
             renderizarBalanceArca();
         }
 
@@ -890,8 +1023,31 @@
                 if(f && f.getMonth() === mesArcaActual && f.getFullYear() === anioArcaActual) compradoMes += m;
             });
 
-            const margenMes = (facturadoMes * pct / 100) - compradoMes;
+            const tope = facturadoMes * pct / 100;
+            const margenMes = tope - compradoMes;
             const margenTotal = (facturadoTotal * pct / 100) - compradoTotal;
+
+            // --- Banner grande con el mensaje directo ---
+            const banner = document.getElementById('arcaEstadoBanner');
+            if(facturadoMes <= 0 && compradoMes <= 0) {
+                banner.innerHTML = `🤷 Todavía no cargaste facturación ni compras de este mes.`;
+                banner.style.background = '#e2e8f0'; banner.style.color = '#475569';
+            } else if(margenMes >= 0) {
+                banner.innerHTML = `✅ PODÉS SEGUIR COMPRANDO — Te quedan <b>$${margenMes.toLocaleString('es-AR')}</b> disponibles en repuestos este mes.`;
+                banner.style.background = '#dcfce7'; banner.style.color = '#047857';
+            } else {
+                banner.innerHTML = `🛑 TE PASASTE POR <b>$${Math.abs(margenMes).toLocaleString('es-AR')}</b> — Convendría no comprar más este mes hasta emparejar con lo facturado.`;
+                banner.style.background = '#fee2e2'; banner.style.color = '#b91c1c';
+            }
+
+            // --- Barra de progreso: comprado vs tope permitido ---
+            const barra = document.getElementById('arcaBarraProgreso');
+            const porcentajeUsado = tope > 0 ? Math.min(100, (compradoMes / tope) * 100) : (compradoMes > 0 ? 100 : 0);
+            barra.style.width = `${porcentajeUsado}%`;
+            barra.style.background = porcentajeUsado < 80 ? 'var(--verde-exito)' : (porcentajeUsado < 100 ? '#f59e0b' : '#dc2626');
+            barra.innerText = porcentajeUsado > 12 ? `${porcentajeUsado.toFixed(0)}%` : '';
+            barra.style.color = 'white'; barra.style.fontSize = '12px'; barra.style.fontWeight = 'bold';
+            document.getElementById('arcaBarraTope').innerText = `Tope: $${tope.toLocaleString('es-AR')}`;
 
             document.getElementById('arcaFacturadoMes').innerText = `$${facturadoMes.toLocaleString('es-AR')}`;
             document.getElementById('arcaCompradoMes').innerText = `$${compradoMes.toLocaleString('es-AR')}`;
@@ -942,11 +1098,13 @@
                 const montoOriginal = parseFloat(item.monto) || 0;
                 const pagado = parseFloat(item.montoPagado) || 0;
                 const saldo = montoOriginal - pagado;
+                const detalleItem = (item.detalle && item.detalle !== 'VENTA') ? item.detalle : 'Venta / consumo';
 
                 if(saldo > 0.009) {
-                    if(!mapaAgrupado[cliente]) mapaAgrupado[cliente] = { nombre: cliente, monto: 0, fechas: [] };
+                    if(!mapaAgrupado[cliente]) mapaAgrupado[cliente] = { nombre: cliente, monto: 0, fechas: [], items: [] };
                     mapaAgrupado[cliente].monto += saldo;
                     if(!mapaAgrupado[cliente].fechas.includes(item.fecha)) mapaAgrupado[cliente].fechas.push(item.fecha);
+                    mapaAgrupado[cliente].items.push({ fecha: item.fecha, detalle: detalleItem, monto: montoOriginal, saldo: saldo });
                 }
 
                 if(pagado > 0.009 && tbodyHistorial) {
@@ -956,6 +1114,7 @@
                     trH.innerHTML = `
                         <td>${item.fecha}</td>
                         <td><b>${cliente}</b></td>
+                        <td style="font-size:12px; color:#475569;">${detalleItem}</td>
                         <td>$${montoOriginal.toLocaleString('es-AR')}</td>
                         <td style="color:var(--verde-exito); font-weight:bold;">$${pagado.toLocaleString('es-AR')}</td>
                         <td>${ultimoPago ? ultimoPago.fecha : '-'}</td>
@@ -973,8 +1132,9 @@
                 htmlAuditoria = `<div style="color:#64748b; text-align:center; font-size:13px; padding:10px;">✅ Al día: No hay saldos pendientes registrados.</div>`;
             }
 
-            deudoresFinales.forEach(d => {
+            deudoresFinales.forEach((d, idx) => {
                 totalCalle += d.monto;
+                d.items.sort((a, b) => { const fa = parsearFecha(a.fecha), fb = parsearFecha(b.fecha); return (fa && fb) ? fa - fb : 0; });
 
                 // CÁLCULO DE ALARMA (15 Días o $300.000)
                 let maxDias = 0;
@@ -986,18 +1146,43 @@
                 const esCritico = d.monto >= 300000 || maxDias > 15;
                 const badgeCritico = esCritico ? `<div style="color:var(--rojo-critico); font-size:11px; font-weight:bold; margin-top:4px;">⚠️ CRÍTICO: ${maxDias > 15 ? '+15 Días' : '>$300K'}</div>` : '';
 
+                // Vista previa compacta: lo último que se llevó, + cuántos ítems más
+                const vistaPrevia = d.items[d.items.length - 1];
+                const previewTexto = d.items.length > 1
+                    ? `${vistaPrevia.detalle} <span style="color:#64748b;">(+${d.items.length - 1} más)</span>`
+                    : vistaPrevia.detalle;
+
+                const idDetalle = `detalleDeuda_${idx}`;
                 const tr = document.createElement('tr');
                 if(esCritico) tr.className = 'fila-alerta-critica';
                 tr.innerHTML = `
-                    <td>${d.fechas.join(', ')}<br><span style="font-size:11px; color:#64748b;">(Max ${maxDias} días)</span></td>
                     <td><b>${d.nombre}</b> ${badgeCritico}</td>
-                    <td style="color:var(--naranja-proveedor); font-weight:bold; font-size:12px;">🔴 IMPAGO</td>
+                    <td style="font-size:12px; color:#475569; cursor:pointer;" onclick="toggleDetalleDeudor('${idDetalle}')">
+                        ${previewTexto}<br><span style="color:var(--azul-premium); font-size:11px; font-weight:bold;">👁️ Ver todo lo que se llevó</span>
+                    </td>
+                    <td>${maxDias} días<br><span style="font-size:11px; color:#64748b;">(desde ${d.fechas.length > 1 ? 'la más vieja' : d.fechas[0]})</span></td>
                     <td style="color:var(--rojo-alerta); font-weight:bold; font-size:15px;">$${d.monto.toLocaleString('es-AR')}</td>
                     <td>
                         <button class="btn-accion btn-principal" style="padding:6px 12px; font-size:12px;" onclick="prepararCobroParcial('${d.nombre}', ${d.monto})">💸 Registrar Pago</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
+
+                const trDetalle = document.createElement('tr');
+                trDetalle.id = idDetalle;
+                trDetalle.style.display = 'none';
+                trDetalle.innerHTML = `
+                    <td colspan="5" style="background:#f8fafc; padding:12px 20px;">
+                        <table style="width:100%; box-shadow:none;">
+                            <thead><tr><th style="width:15%;">Fecha</th><th style="width:55%;">Detalle</th><th style="width:15%;">Monto</th><th style="width:15%;">Saldo</th></tr></thead>
+                            <tbody>
+                                ${d.items.map(it => `<tr><td>${it.fecha}</td><td>${it.detalle}</td><td>$${it.monto.toLocaleString('es-AR')}</td><td style="font-weight:bold; color:var(--rojo-alerta);">$${it.saldo.toLocaleString('es-AR')}</td></tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </td>
+                `;
+                tbody.appendChild(trDetalle);
+
                 htmlAuditoria += `<div style="display:flex; justify-content:space-between; align-items:center; padding: 6px 0; border-bottom: 1px solid #fca5a5;"><span style="font-weight:bold;">👤 ${d.nombre}</span><span style="color:var(--rojo-alerta); font-weight:bold;">$${d.monto.toLocaleString('es-AR')}</span></div>`;
             });
 
@@ -1013,6 +1198,12 @@
             document.getElementById('modalCobroFecha').value = fechaSugerida || obtenerFechaDeHoy();
             document.getElementById('modalCobroTitulo').innerText = `Cobro a ${nombre}`;
             document.getElementById('modalCobro').style.display = 'flex';
+        }
+
+        function toggleDetalleDeudor(idDetalle) {
+            const fila = document.getElementById(idDetalle);
+            if(!fila) return;
+            fila.style.display = (fila.style.display === 'none') ? 'table-row' : 'none';
         }
 
         function cerrarModalCobro() { document.getElementById('modalCobro').style.display = 'none'; }
@@ -1059,6 +1250,7 @@
             cerrarModalCobro();
             actualizarVistaDeudores();
             renderizarCalendario();
+            mostrarModalRecibo(nombre, montoPagar, fechaCobro, metodo);
 
             const estamosEnCalendario = document.getElementById('calendarioTab').classList.contains('activo');
             if(estamosEnCalendario) {
@@ -1066,6 +1258,24 @@
             } else {
                 cambiarTab('cajaDiariaTab', document.getElementById('btnTabCaja'));
             }
+        }
+
+        function mostrarModalRecibo(nombre, monto, fecha, medio) {
+            const negocio = (localStorage.getItem('db_nombre_negocio') || '').trim() || 'nuestro negocio';
+            const texto = `Recibí $${monto.toLocaleString('es-AR')} de ${nombre} el ${fecha} (${etiquetaMedio(medio)}), en concepto de pago de cuenta corriente.\n¡Gracias por tu pago! - ${negocio}`;
+            document.getElementById('textoReciboPreview').value = texto;
+            document.getElementById('modalRecibo').style.display = 'flex';
+        }
+
+        function copiarTextoRecibo() {
+            const texto = document.getElementById('textoReciboPreview');
+            texto.select();
+            navigator.clipboard ? navigator.clipboard.writeText(texto.value).then(() => alert("✅ Texto copiado.")) : document.execCommand('copy');
+        }
+
+        function enviarReciboPorWhatsapp() {
+            const texto = document.getElementById('textoReciboPreview').value;
+            window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
         }
 
         function actualizarDatalistDeudoresFrecuentes() {
@@ -1080,12 +1290,15 @@
         }
 
         function calcularBalanceComercial() {
-            let ingresosTotales = 0, egresosTotales = 0;
-            itemsCajaDelDia.forEach(i => { if(['P', 'MP', 'T'].includes(i.condicion)) ingresosTotales += (parseFloat(i.monto) || 0); });
+            let ingresosTotales = 0, egresosTotales = 0, egresosCajaTotales = 0;
+            itemsCajaDelDia.forEach(i => {
+                if(['P', 'MP', 'T'].includes(i.condicion)) ingresosTotales += (parseFloat(i.monto) || 0);
+                if(i.condicion === 'EGRESO') egresosCajaTotales += (parseFloat(i.monto) || 0);
+            });
             listaProveedoresCentral.forEach(p => egresosTotales += p.monto);
-            let neto = ingresosTotales - egresosTotales;
+            let neto = ingresosTotales - egresosTotales - egresosCajaTotales;
             document.getElementById('balIngresos').innerText = `$${ingresosTotales.toLocaleString('es-AR')}`;
-            document.getElementById('balTotalEgresos').innerText = `$${egresosTotales.toLocaleString('es-AR')}`;
+            document.getElementById('balTotalEgresos').innerText = `$${(egresosTotales + egresosCajaTotales).toLocaleString('es-AR')}`;
             const celdaNeto = document.getElementById('balNetoFinal');
             celdaNeto.innerText = `$${neto.toLocaleString('es-AR')}`;
             celdaNeto.className = neto >= 0 ? "badge-positivo" : "badge-negativo";
@@ -1230,6 +1443,8 @@
             const stringData = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ itemsCajaDelDia, listaDeudoresCentral, listaProveedoresCentral, listaFacturacionArcaCentral, apiKeys: document.getElementById('apiKeyInput').value.trim() }));
             const d = document.createElement('a'); d.setAttribute("href", stringData); d.setAttribute("download", `Backup_Comercial_${obtenerFechaDeHoy()}.json`);
             document.body.appendChild(d); d.click(); d.remove();
+            localStorage.setItem('db_ultimo_backup', Date.now().toString());
+            verificarRecordatorioBackup();
         }
 
         function importarBackupJSON(inputElement) {
@@ -1266,6 +1481,160 @@
             };
             lectorArchivo.readAsText(archivoJSON);
             inputElement.value = '';
+        }
+
+        // ==================================================================
+        // ====  SINCRONIZACIÓN ENTRE DISPOSITIVOS (archivo vinculado)  ====
+        // ==================================================================
+        // Usa la File System Access API del navegador (Chrome/Edge) para guardar automáticamente
+        // los datos en un archivo real del disco. Si ese archivo está dentro de una carpeta de
+        // Google Drive/Dropbox/OneDrive sincronizada, permite abrir la app desde otra compu,
+        // vincular el mismo archivo, y ver los mismos datos — sin depender solo del navegador.
+
+        function soportaArchivosVinculados() { return 'showSaveFilePicker' in window; }
+
+        function actualizarBadgeVinculacion(vinculado) {
+            const badge = document.getElementById('badgeVinculacion');
+            if(!badge) return;
+            if(vinculado) {
+                badge.innerHTML = '🟢 Archivo vinculado — se guarda automáticamente ahí';
+                badge.style.color = 'var(--verde-exito)';
+            } else {
+                badge.innerHTML = '⚪ Sin vincular (los datos quedan solo en este navegador)';
+                badge.style.color = '#64748b';
+            }
+            verificarRecordatorioBackup();
+        }
+
+        function abrirBaseHandles() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open('appContableHandles', 1);
+                req.onupgradeneeded = () => { req.result.createObjectStore('handles'); };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function guardarHandleEnDB(handle) {
+            try {
+                const db = await abrirBaseHandles();
+                const tx = db.transaction('handles', 'readwrite');
+                tx.objectStore('handles').put(handle, 'archivoPrincipal');
+            } catch(e) { console.error("No se pudo guardar la referencia del archivo:", e); }
+        }
+
+        async function leerHandleDeDB() {
+            try {
+                const db = await abrirBaseHandles();
+                const tx = db.transaction('handles', 'readonly');
+                return await new Promise((resolve) => {
+                    const req = tx.objectStore('handles').get('archivoPrincipal');
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => resolve(null);
+                });
+            } catch(e) { return null; }
+        }
+
+        async function crearArchivoVinculado() {
+            if(!soportaArchivosVinculados()) return alert("Tu navegador no soporta vincular archivos (usá Chrome o Edge en PC). Mientras tanto, podés seguir usando Exportar/Importar respaldo manual.");
+            try {
+                const handle = await window.showSaveFilePicker({ suggestedName: 'Backup_Comercial.json', types: [{ description: 'JSON', accept: {'application/json': ['.json']} }] });
+                handleArchivoVinculado = handle;
+                await guardarHandleEnDB(handle);
+                await escribirArchivoVinculado();
+                actualizarBadgeVinculacion(true);
+                alert("✅ Archivo vinculado. A partir de ahora, todo lo que cargues se va a guardar automáticamente ahí también.\n\nSi guardaste ese archivo dentro de una carpeta de Google Drive, Dropbox o OneDrive, después vas a poder abrir la app desde otra computadora, vincular ese mismo archivo, y ver los mismos datos.");
+            } catch(e) { if(e.name !== 'AbortError') console.error(e); }
+        }
+
+        async function abrirArchivoVinculadoExistente() {
+            if(!soportaArchivosVinculados()) return alert("Tu navegador no soporta vincular archivos (usá Chrome o Edge en PC). Mientras tanto, podés seguir usando Exportar/Importar respaldo manual.");
+            try {
+                const [handle] = await window.showOpenFilePicker({ types: [{ description: 'JSON', accept: {'application/json': ['.json']} }] });
+                const permiso = await handle.requestPermission({ mode: 'readwrite' });
+                if(permiso !== 'granted') return alert("No se otorgó permiso de escritura sobre el archivo.");
+
+                const file = await handle.getFile();
+                const texto = await file.text();
+                let datos = {};
+                if(texto.trim()) {
+                    try { datos = JSON.parse(texto); } catch(e) { return alert("Ese archivo no tiene un formato JSON válido de esta app."); }
+                }
+
+                handleArchivoVinculado = handle;
+                await guardarHandleEnDB(handle);
+
+                if(datos.itemsCajaDelDia) {
+                    const sumar = confirm("Este archivo ya tiene datos cargados.\n\n✅ [Aceptar] = Sumarlos a lo que ya tenés acá\n❌ [Cancelar] = Reemplazar todo por el contenido del archivo (recomendado si es la base 'oficial' de otra compu)");
+                    if(sumar) {
+                        itemsCajaDelDia = itemsCajaDelDia.concat(datos.itemsCajaDelDia || []);
+                        listaDeudoresCentral = listaDeudoresCentral.concat(datos.listaDeudoresCentral || []);
+                        listaProveedoresCentral = listaProveedoresCentral.concat(datos.listaProveedoresCentral || []);
+                        listaFacturacionArcaCentral = listaFacturacionArcaCentral.concat(datos.listaFacturacionArcaCentral || []);
+                    } else {
+                        itemsCajaDelDia = datos.itemsCajaDelDia || [];
+                        listaDeudoresCentral = datos.listaDeudoresCentral || [];
+                        listaProveedoresCentral = datos.listaProveedoresCentral || [];
+                        listaFacturacionArcaCentral = datos.listaFacturacionArcaCentral || [];
+                    }
+                    itemsCajaDelDia.forEach(item => {
+                        if(item.condicion === 'DEBE') {
+                            item.montoPagado = parseFloat(item.montoPagado) || 0;
+                            item.pagada = !!item.pagada;
+                            if(!Array.isArray(item.pagos)) item.pagos = [];
+                        }
+                    });
+                    renderizarTablaCaja(); actualizarVistaDeudores(); renderizarTablaProveedores(); renderizarTablaArca(); renderizarCalendario(); renderizarDashboard();
+                }
+
+                actualizarBadgeVinculacion(true);
+                await escribirArchivoVinculado();
+                alert("✅ Archivo vinculado con éxito.");
+            } catch(e) { if(e.name !== 'AbortError') console.error(e); }
+        }
+
+        async function escribirArchivoVinculado() {
+            if(!handleArchivoVinculado) return;
+            try {
+                const permiso = await handleArchivoVinculado.queryPermission({ mode: 'readwrite' });
+                if(permiso !== 'granted') { actualizarBadgeVinculacion(false); return; }
+                const writable = await handleArchivoVinculado.createWritable();
+                await writable.write(JSON.stringify({ itemsCajaDelDia, listaDeudoresCentral, listaProveedoresCentral, listaFacturacionArcaCentral }, null, 2));
+                await writable.close();
+            } catch(e) { console.error("No se pudo escribir el archivo vinculado:", e); }
+        }
+
+        // Al abrir la app, intenta retomar el archivo vinculado en una sesión anterior
+        async function intentarReconectarHandleGuardado() {
+            if(!soportaArchivosVinculados()) return;
+            const handle = await leerHandleDeDB();
+            if(!handle) { actualizarBadgeVinculacion(false); return; }
+            try {
+                const permiso = await handle.queryPermission({ mode: 'readwrite' });
+                if(permiso === 'granted') {
+                    handleArchivoVinculado = handle;
+                    actualizarBadgeVinculacion(true);
+                } else {
+                    handleArchivoVinculadoPendiente = handle;
+                    const badge = document.getElementById('badgeVinculacion');
+                    if(badge) {
+                        badge.innerHTML = `🔒 Tenías un archivo vinculado — <button class="btn-accion" style="padding:3px 8px; font-size:11px;" onclick="reactivarHandleGuardado()">Tocá acá para reactivarlo</button>`;
+                        badge.style.color = '#b45309';
+                    }
+                }
+            } catch(e) { actualizarBadgeVinculacion(false); }
+        }
+
+        async function reactivarHandleGuardado() {
+            if(!handleArchivoVinculadoPendiente) return;
+            try {
+                const permiso = await handleArchivoVinculadoPendiente.requestPermission({ mode: 'readwrite' });
+                if(permiso === 'granted') {
+                    handleArchivoVinculado = handleArchivoVinculadoPendiente;
+                    actualizarBadgeVinculacion(true);
+                    await escribirArchivoVinculado();
+                }
+            } catch(e) { console.error(e); }
         }
 
         // --- NUEVA LÓGICA: CONSOLIDADOR MENSUAL DE EXCELS ---
@@ -1360,6 +1729,97 @@
         // ============  CALENDARIO MENSUAL Y CIERRE DE MES  ===============
         // ==================================================================
 
+        // ==================================================================
+        // ========================  DASHBOARD INICIO  =====================
+        // ==================================================================
+
+        function renderizarDashboard() {
+            const hoy = obtenerFechaDeHoy();
+
+            const bannerDia = document.getElementById('bannerAlertaDia');
+            if(fechaTrabajoActual && fechaTrabajoActual !== hoy) {
+                bannerDia.style.display = 'block';
+                bannerDia.innerHTML = `<div class="panel-respaldo" style="background:#fef9c3; border-color:#fde047; margin-bottom:20px;">
+                    <div>⏳ <b>La Caja Diaria está parada en el día ${fechaTrabajoActual}</b> (hoy es ${hoy}). Si ya terminaste de cargar ese día, avanzá al siguiente.</div>
+                    <button class="btn-accion" style="background:#eab308; color:white;" onclick="cambiarTab('cajaDiariaTab', document.getElementById('btnTabCaja'))">Ir a Caja Diaria</button>
+                </div>`;
+            } else {
+                bannerDia.style.display = 'none';
+            }
+
+            let efec = 0, transf = 0, tarj = 0, deuda = 0, egresos = 0;
+            itemsCajaDelDia.filter(i => i.fecha === fechaTrabajoActual).forEach(i => {
+                const m = parseFloat(i.monto) || 0;
+                if(i.condicion === 'P') efec += m;
+                else if(i.condicion === 'MP') transf += m;
+                else if(i.condicion === 'T') tarj += m;
+                else if(i.condicion === 'DEBE') deuda += m;
+                else if(i.condicion === 'EGRESO') egresos += m;
+            });
+            document.getElementById('dashEfectivo').innerText = `$${(efec - egresos).toLocaleString('es-AR')}`;
+            document.getElementById('dashElectronico').innerText = `$${(transf + tarj).toLocaleString('es-AR')}`;
+            document.getElementById('dashFiados').innerText = `$${deuda.toLocaleString('es-AR')}`;
+
+            const mapaSaldos = {};
+            itemsCajaDelDia.forEach(item => {
+                if(item.condicion !== 'DEBE' || !item.deudor || item.deudor.trim() === '') return;
+                const saldo = (parseFloat(item.monto) || 0) - (parseFloat(item.montoPagado) || 0);
+                if(saldo > 0.009) {
+                    const cliente = item.deudor.trim().toUpperCase();
+                    if(!mapaSaldos[cliente]) mapaSaldos[cliente] = { monto: 0, fechas: [] };
+                    mapaSaldos[cliente].monto += saldo;
+                    if(!mapaSaldos[cliente].fechas.includes(item.fecha)) mapaSaldos[cliente].fechas.push(item.fecha);
+                }
+            });
+            let totalPendiente = 0;
+            const criticos = [];
+            Object.keys(mapaSaldos).forEach(nombre => {
+                totalPendiente += mapaSaldos[nombre].monto;
+                let maxDias = 0;
+                mapaSaldos[nombre].fechas.forEach(f => { const d = calcularDiasAntiguedad(f); if(d > maxDias) maxDias = d; });
+                if(mapaSaldos[nombre].monto >= 300000 || maxDias > 15) criticos.push({ nombre, monto: mapaSaldos[nombre].monto, maxDias });
+            });
+            document.getElementById('dashDeudaTotal').innerText = `$${totalPendiente.toLocaleString('es-AR')}`;
+
+            const contDeudasCrit = document.getElementById('dashDeudasCriticas');
+            if(criticos.length === 0) {
+                contDeudasCrit.innerHTML = `<div style="color:#64748b; font-size:13px;">✅ No hay deudas críticas por ahora.</div>`;
+            } else {
+                criticos.sort((a, b) => b.monto - a.monto);
+                contDeudasCrit.innerHTML = criticos.map(c => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#fee2e2; padding:8px 12px; border-radius:6px;">
+                        <span><b>${c.nombre}</b> — ${c.maxDias} días</span>
+                        <span style="font-weight:bold; color:#b91c1c;">$${c.monto.toLocaleString('es-AR')}</span>
+                    </div>
+                `).join('') + `<button class="btn-accion" style="align-self:flex-start; background:#e2e8f0; font-size:12px; margin-top:6px;" onclick="cambiarTab('deudoresTab', document.getElementById('btnTabDeudores'))">Ver todas →</button>`;
+            }
+
+            const ahora = new Date();
+            let facturadoMesReal = 0, compradoMesReal = 0;
+            listaFacturacionArcaCentral.forEach(a => { const f = parsearFecha(a.fecha); if(f && f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear()) facturadoMesReal += (parseFloat(a.monto) || 0); });
+            listaProveedoresCentral.forEach(p => { const f = parsearFecha(p.fecha); if(f && f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear()) compradoMesReal += (parseFloat(p.monto) || 0); });
+            const margenReal = facturadoMesReal - compradoMesReal;
+            document.getElementById('dashResumenArca').innerHTML = `Facturado: $${facturadoMesReal.toLocaleString('es-AR')} &nbsp;|&nbsp; Comprado: $${compradoMesReal.toLocaleString('es-AR')} &nbsp;|&nbsp; <span style="color:${margenReal >= 0 ? '#047857' : '#b91c1c'};">${margenReal >= 0 ? `Margen: $${margenReal.toLocaleString('es-AR')}` : `Te pasaste $${Math.abs(margenReal).toLocaleString('es-AR')}`}</span>`;
+        }
+
+        // Recuerda descargar un backup si pasaron más de 7 días (se omite si ya hay un archivo vinculado, porque ese ya se autoguarda)
+        function verificarRecordatorioBackup() {
+            const banner = document.getElementById('bannerRecordatorioBackup');
+            if(!banner) return;
+            if(handleArchivoVinculado) { banner.style.display = 'none'; return; }
+            const ultimo = parseInt(localStorage.getItem('db_ultimo_backup') || '0', 10);
+            const dias = ultimo ? Math.floor((Date.now() - ultimo) / 86400000) : null;
+            if(dias === null || dias >= 7) {
+                banner.style.display = 'block';
+                banner.innerHTML = `<div class="panel-respaldo" style="background:#fee2e2; border-color:#fecaca;">
+                    <div>📥 <b>${dias === null ? 'Todavía no descargaste ningún respaldo.' : `Hace ${dias} días que no descargás un respaldo.`}</b> Como los datos viven en este navegador, es buena idea guardar una copia.</div>
+                    <button class="btn-accion btn-exito" style="padding:6px 12px; font-size:12px;" onclick="exportarBackupJSON()">📥 Descargar ahora</button>
+                </div>`;
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
         function inicializarCalendario() {
             const hoy = new Date();
             mesCalendarioActual = hoy.getMonth();
@@ -1442,6 +1902,38 @@
                 celda.innerHTML = `<div style="font-size:13px; font-weight:bold; ${esHoy ? 'color:var(--azul-premium);' : ''}">${dia}</div>${badges}`;
                 grid.appendChild(celda);
             }
+            renderizarGraficoEvolucionMensual();
+        }
+
+        // Gráfico de barras simple (SVG hecho a mano, sin librerías) con la venta real (efectivo+transf+tarjeta) día a día del mes mostrado
+        function renderizarGraficoEvolucionMensual() {
+            const contenedor = document.getElementById('graficoEvolucionMensual');
+            if(!contenedor) return;
+
+            const diasEnMes = new Date(anioCalendarioActual, mesCalendarioActual + 1, 0).getDate();
+            const valoresPorDia = [];
+            for(let dia = 1; dia <= diasEnMes; dia++) {
+                const fechaStr = formatearFechaDDMMYYYY(new Date(anioCalendarioActual, mesCalendarioActual, dia));
+                let total = 0;
+                itemsCajaDelDia.forEach(i => { if(i.fecha === fechaStr && ['P','MP','T'].includes(i.condicion)) total += (parseFloat(i.monto) || 0); });
+                valoresPorDia.push(total);
+            }
+
+            const max = Math.max(...valoresPorDia, 1);
+            const anchoTotal = 900, alto = 200, margenInferior = 20, anchoBarra = (anchoTotal / diasEnMes) * 0.7, espacio = anchoTotal / diasEnMes;
+
+            let barras = '';
+            valoresPorDia.forEach((v, idx) => {
+                const alturaBarra = (v / max) * (alto - margenInferior - 10);
+                const x = idx * espacio + (espacio - anchoBarra) / 2;
+                const y = alto - margenInferior - alturaBarra;
+                const color = v > 0 ? 'var(--azul-premium)' : '#e2e8f0';
+                barras += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${anchoBarra.toFixed(1)}" height="${alturaBarra.toFixed(1)}" fill="${color}" rx="2"><title>Día ${idx+1}: $${v.toLocaleString('es-AR')}</title></rect>`;
+                if(diasEnMes <= 31) barras += `<text x="${(x + anchoBarra/2).toFixed(1)}" y="${alto - 4}" font-size="9" text-anchor="middle" fill="#94a3b8">${idx+1}</text>`;
+            });
+
+            contenedor.innerHTML = `<svg viewBox="0 0 ${anchoTotal} ${alto}" style="width:100%; height:auto;">${barras}</svg>
+                <div style="font-size:11px; color:#64748b; text-align:center; margin-top:6px;">Venta real por día (efectivo + MP/transferencia + tarjeta) — pasá el mouse sobre una barra para ver el monto exacto</div>`;
         }
 
         function seleccionarDiaCalendario(fechaStr) {
@@ -1456,13 +1948,14 @@
             document.getElementById('tituloDiaSeleccionado').innerText = `📅 Día ${fechaStr}`;
 
             const movimientosDelDia = itemsCajaDelDia.filter(i => i.fecha === fechaStr);
-            let efec = 0, transf = 0, tarj = 0, deudaGenerada = 0, cobrado = 0;
+            let efec = 0, transf = 0, tarj = 0, deudaGenerada = 0, cobrado = 0, egresosDia = 0;
             movimientosDelDia.forEach(i => {
                 const m = parseFloat(i.monto) || 0;
                 if(i.condicion === 'P') efec += m;
                 else if(i.condicion === 'MP') transf += m;
                 else if(i.condicion === 'T') tarj += m;
                 else if(i.condicion === 'DEBE') deudaGenerada += m;
+                else if(i.condicion === 'EGRESO') egresosDia += m;
             });
             itemsCajaDelDia.forEach(item => {
                 if(item.condicion === 'DEBE' && Array.isArray(item.pagos)) {
@@ -1472,10 +1965,11 @@
 
             const resumen = document.getElementById('resumenDiaSeleccionado');
             resumen.innerHTML = `
-                <div class="card-indicador efectivo"><label>💵 Efectivo</label><div class="monto">$${efec.toLocaleString('es-AR')}</div></div>
+                <div class="card-indicador efectivo"><label>💵 Efectivo (Neto)</label><div class="monto">$${(efec - egresosDia).toLocaleString('es-AR')}</div></div>
                 <div class="card-indicador transf"><label>📱 MP/Transf.</label><div class="monto">$${transf.toLocaleString('es-AR')}</div></div>
                 <div class="card-indicador tarjeta"><label>💳 Tarjeta</label><div class="monto">$${tarj.toLocaleString('es-AR')}</div></div>
                 <div class="card-indicador deuda"><label>⚠️ Fiados Generados</label><div class="monto">$${deudaGenerada.toLocaleString('es-AR')}</div></div>
+                <div class="card-indicador" style="border-left-color:#dc2626;"><label>🔴 Egresos</label><div class="monto" style="color:#dc2626;">$${egresosDia.toLocaleString('es-AR')}</div></div>
                 <div class="card-indicador total"><label>💸 Fiados Cobrados este día</label><div class="monto" style="color:#6d28d9;">$${cobrado.toLocaleString('es-AR')}</div></div>
             `;
 
@@ -1537,11 +2031,11 @@
 
             // --- Hoja 1: Balance diario ---
             const filasBalance = [];
-            let acumEfec=0, acumTransf=0, acumTarj=0, acumDeuda=0, acumCobrado=0, acumGastos=0;
+            let acumEfec=0, acumTransf=0, acumTarj=0, acumDeuda=0, acumCobrado=0, acumGastos=0, acumEgresos=0;
 
             for(let dia = 1; dia <= diasEnMes; dia++) {
                 const fechaStr = formatearFechaDDMMYYYY(new Date(anio, mes, dia));
-                let efec=0, transf=0, tarj=0, deudaGenerada=0, cobrado=0, gastos=0;
+                let efec=0, transf=0, tarj=0, deudaGenerada=0, cobrado=0, gastos=0, egresosCaja=0;
 
                 itemsCajaDelDia.forEach(i => {
                     if(i.fecha !== fechaStr) return;
@@ -1550,6 +2044,7 @@
                     else if(i.condicion === 'MP') transf += m;
                     else if(i.condicion === 'T') tarj += m;
                     else if(i.condicion === 'DEBE') deudaGenerada += m;
+                    else if(i.condicion === 'EGRESO') egresosCaja += m;
                 });
                 itemsCajaDelDia.forEach(i => {
                     if(i.condicion === 'DEBE' && Array.isArray(i.pagos)) {
@@ -1558,22 +2053,23 @@
                 });
                 listaProveedoresCentral.forEach(p => { if(p.fecha === fechaStr) gastos += (parseFloat(p.monto)||0); });
 
-                const totalIngresoReal = efec + transf + tarj;
-                if(totalIngresoReal === 0 && deudaGenerada === 0 && cobrado === 0 && gastos === 0) continue; // día sin movimiento, no ensucia el reporte
+                const efectivoNeto = efec - egresosCaja;
+                const totalIngresoReal = efectivoNeto + transf + tarj;
+                if(totalIngresoReal === 0 && efec === 0 && deudaGenerada === 0 && cobrado === 0 && gastos === 0 && egresosCaja === 0) continue; // día sin movimiento, no ensucia el reporte
 
-                acumEfec+=efec; acumTransf+=transf; acumTarj+=tarj; acumDeuda+=deudaGenerada; acumCobrado+=cobrado; acumGastos+=gastos;
+                acumEfec+=efectivoNeto; acumTransf+=transf; acumTarj+=tarj; acumDeuda+=deudaGenerada; acumCobrado+=cobrado; acumGastos+=gastos; acumEgresos+=egresosCaja;
 
                 filasBalance.push({
-                    "Fecha": fechaStr, "Efectivo": efec, "MercadoPago/Transf": transf, "Tarjeta": tarj,
+                    "Fecha": fechaStr, "Efectivo (Neto)": efectivoNeto, "MercadoPago/Transf": transf, "Tarjeta": tarj,
                     "Total Ingresos Reales": totalIngresoReal, "Fiados Generados": deudaGenerada,
-                    "Fiados Cobrados": cobrado, "Gastos (Facturas+Remitos)": gastos,
+                    "Fiados Cobrados": cobrado, "Egresos de Caja": egresosCaja, "Gastos (Facturas+Remitos)": gastos,
                     "Ganancia Neta del Día": totalIngresoReal - gastos
                 });
             }
             filasBalance.push({
-                "Fecha": "TOTAL MES", "Efectivo": acumEfec, "MercadoPago/Transf": acumTransf, "Tarjeta": acumTarj,
+                "Fecha": "TOTAL MES", "Efectivo (Neto)": acumEfec, "MercadoPago/Transf": acumTransf, "Tarjeta": acumTarj,
                 "Total Ingresos Reales": acumEfec+acumTransf+acumTarj, "Fiados Generados": acumDeuda,
-                "Fiados Cobrados": acumCobrado, "Gastos (Facturas+Remitos)": acumGastos,
+                "Fiados Cobrados": acumCobrado, "Egresos de Caja": acumEgresos, "Gastos (Facturas+Remitos)": acumGastos,
                 "Ganancia Neta del Día": (acumEfec+acumTransf+acumTarj) - acumGastos
             });
 
@@ -1617,6 +2113,30 @@
             const nombreMes = String(mes + 1).padStart(2, '0');
             XLSX.writeFile(libro, `Balance_Mensual_${nombreMes}-${anio}.xlsx`);
             alert(`✅ Balance de ${NOMBRES_MESES[mes]} ${anio} exportado con éxito (4 hojas: Balance, Facturas, Remitos, Deudores).`);
+        }
+    </script>
+
+    <!-- Botón flotante de humor (no tiene ninguna función contable, es solo para alegrar el día) -->
+    <div id="burbujaHumor" style="position:fixed; bottom:92px; right:20px; background:white; padding:8px 14px; border-radius:12px; box-shadow:0 4px 14px rgba(0,0,0,0.25); font-weight:bold; font-size:13px; color:#0f172a; z-index:9999; white-space:nowrap;">ESTOY TRISTE</div>
+    <div id="botonHumor" onclick="toggleHumor()" title="Click acá" style="position:fixed; bottom:20px; right:20px; width:60px; height:60px; border-radius:50%; background:#64748b; display:flex; align-items:center; justify-content:center; font-size:30px; box-shadow:0 4px 14px rgba(0,0,0,0.3); cursor:pointer; z-index:9999; transition: transform 0.15s, background 0.2s; user-select:none;">😢</div>
+    <script>
+        let estadoHumorFlotante = 'triste';
+        function toggleHumor() {
+            const btn = document.getElementById('botonHumor');
+            const burbuja = document.getElementById('burbujaHumor');
+            if(estadoHumorFlotante === 'triste') {
+                estadoHumorFlotante = 'feliz';
+                btn.innerText = '😄';
+                btn.style.background = '#22c55e';
+                burbuja.innerText = 'ESTOY FELIZ';
+            } else {
+                estadoHumorFlotante = 'triste';
+                btn.innerText = '😢';
+                btn.style.background = '#64748b';
+                burbuja.innerText = 'ESTOY TRISTE';
+            }
+            btn.style.transform = 'scale(1.15)';
+            setTimeout(() => { btn.style.transform = 'scale(1)'; }, 150);
         }
     </script>
 </body>
